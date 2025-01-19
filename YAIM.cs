@@ -194,6 +194,7 @@ namespace YAIM
 				handler.gameObject.SetActive(!handler.gameObject.activeSelf);
 				var listToUse = handler.gameObject.activeSelf ? handler.OpenSounds : handler.CloseSounds;
 				AudioClip toPlay = listToUse[UnityEngine.Random.Range(0, listToUse.Count)];
+				handler.Audio.pitch = (float)(UnityEngine.Random.Range(90, 111)) / 100f;
 				handler.Audio.PlayOneShot(toPlay);
 				handler.Refresh();
 			}
