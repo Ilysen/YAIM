@@ -57,7 +57,7 @@ namespace YAIM
 		{
 			YAIM.PrintToConsole("Attempting to create inventory script...", YAIM.ConsoleMessageScope.System);
 			Items = new List<GameObject>();
-			MaxSlots = byte.Parse(YAIM.ItemLimit.GetValue());
+			MaxSlots = Math.Min((byte)15, byte.Parse(YAIM.ItemLimit.GetValue()));
 			SetupValues();
 			Singleton = this;
 			YAIM.PrintToConsole("Created inventory script.", YAIM.ConsoleMessageScope.System);

@@ -2,6 +2,7 @@
 
 * Include Unity and font files in repo (check attribution for font)
 * Cleanliness pass -- proper regioning, etc
+* Save/load
 
 # Yet Another Inventory Mod
 

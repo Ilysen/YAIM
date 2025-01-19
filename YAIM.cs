@@ -65,7 +65,7 @@ namespace YAIM
 			ShowMessages = Settings.AddCheckBox(this, "showMessages", "Show messages when failing to pick something up", true);
 
 			Settings.AddHeader(this, "Balance", headingColor, Color.white);
-			ItemLimit = Settings.AddTextBox(this, "itemCapacityString", "Item limit", "10", "Enter a valid number. Values will be clamped between 1 and 50.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
+			ItemLimit = Settings.AddTextBox(this, "itemCapacityString", "Item limit", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 			Settings.AddText(this, "Determines how many items you can hold at a time. Suffering mode uses its own system and ignores this.");
 
 			Settings.AddHeader(this, "Suffering mode", headingColor, Color.white);
