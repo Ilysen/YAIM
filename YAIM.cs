@@ -1,22 +1,23 @@
 ﻿using HutongGames.PlayMaker;
 using MSCLoader;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Mail;
 using UnityEngine;
-using YAIM.UI;
+using Ceres.YAIM.UI;
 
-namespace YAIM
+namespace Ceres.YAIM
 {
+	/// <summary>
+	/// The main mod script. Core logic is split between here, <see cref="InventoryHandler"/>, and <see cref="UIHandler"/>.
+	/// </summary>
 	public class YAIM : Mod
 	{
 		#region Mod setup and settings
-		public override string ID => "YAIM"; // Your (unique) mod ID 
-		public override string Name => "Yet Another Inventory Mod"; // Your mod name
-		public override string Author => "Ceres et al."; // Name of the Author (your name)
-		public override string Version => "0.1"; // Version
-		public override string Description => ""; // Short description of your mod
+		public override string ID => "YAIM";
+		public override string Name => "Yet Another Inventory Mod";
+		public override string Author => "Ceres et al.";
+		public override string Version => "0.1";
+		public override string Description => "Carry stuff around! A spiritual successor to many other backpack mods.";
 
 		public override void ModSetup()
 		{
@@ -26,81 +27,94 @@ namespace YAIM
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
 
-		private readonly Keybind _pickUpKey = new Keybind("pickUp", "Pick up an item", KeyCode.E);
-		private readonly Keybind _dropSelectedKey = new Keybind("dropSelected", "Drop selected item", KeyCode.Y);
-		private readonly Keybind _dropAllKey = new Keybind("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
-		private readonly Keybind _toggleGuiKey = new Keybind("ToggleGUI", "Open or close inventory list", KeyCode.X);
+		private readonly Keybind KeybindToggleGUI = new Keybind("ToggleGUI", "Open or close inventory list", KeyCode.X);
+		private readonly Keybind KeybindPickUp = new Keybind("pickUp", "Pick up an item", KeyCode.E);
+		private readonly Keybind KeybindDropSelected = new Keybind("dropSelected", "Drop selected item", KeyCode.Y);
+		private readonly Keybind KeybindDropAll = new Keybind("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
 
-		internal static SettingsCheckBox ShowMessages;
-		internal static SettingsCheckBox PickupOnlyWhenOpen;
-		internal static SettingsCheckBox DropOnlyWhenOpen;
+		internal static SettingsCheckBox SettingShowMessages;
+		internal static SettingsCheckBox SettingPlaySounds;
 
-		internal static SettingsTextBox ItemLimit;
+		internal static SettingsCheckBox SettingSufferingMode;
 
-		internal static SettingsCheckBox EnableSufferingMode;
-		internal static SettingsTextBox WeightLimit;
-		internal static SettingsTextBox LengthLimit;
+		internal static SettingsTextBox SettingMaxSlots;
+		internal static SettingsTextBox SettingWeightLimit;
+		internal static SettingsTextBox SettingLengthLimit;
 
-		internal static SettingsCheckBox LogSystem;
-		internal static SettingsCheckBox LogSaveLoad;
-		internal static SettingsCheckBox LogPickupAndDrop;
-		internal static SettingsCheckBox LogPickupLogic;
-		internal static SettingsCheckBox LogInvalidPickups;
-		internal static SettingsCheckBox LogRejectedPickups;
+		internal static SettingsCheckBox SettingLogSystem;
+		internal static SettingsCheckBox SettingLogSaveLoad;
+		internal static SettingsCheckBox SettingLogPickupAndDrop;
+		internal static SettingsCheckBox SettingLogPickupLogic;
 
-		internal static SettingsCheckBox DisableBlacklist;
+		internal static SettingsCheckBox ettingDisableBlacklist;
 
+		/// <summary>
+		/// When this value reaches 0, the interface will automatically be refreshed.
+		/// We do this to make sure that players who keep the interface open will see it update with food spoilage, etc.
+		/// </summary>
 		private float RefreshTimer = 30f;
-		internal static float FailMessageTimer = 0f;
-		internal static string FailMessage = string.Empty;
+
+		/// <summary>
+		/// This string is updated with a readable error message when a pickup attempt fails.
+		/// </summary>
+		private static string FailMessage = string.Empty;
+
+		/// <summary>
+		/// The amount of time remaining for <see cref="FailMessage"/> to be displayed.
+		/// </summary>
+		private static float FailMessageTimer = 0f;
+
+		/// <summary>
+		/// The <see cref="FsmString"/> whose value we're overriding with <see cref="FailMessage"/>.
+		/// </summary>
 		private FsmString FailMessageText;
 
 		private void Mod_Settings()
 		{
 			Color headingColor = new Color(0.1f, 0.1f, 0.1f);
 
+			Settings.AddButton(this, "Refresh in-game values", RefreshValues);
+			Settings.AddText(this, "Inventory details like item max, suffering mode, etc. are cached during game load and won't change mid-game on their own. This button forces the inventory to re-initialize, which will update any values that have been changed in the settings since the save was loaded.");
+
 			Settings.AddHeader(this, "System", headingColor, Color.white);
-			PickupOnlyWhenOpen = Settings.AddCheckBox(this, "pickupOnlyWhenOpen", "Pick up only if the list is visible", true);
-			DropOnlyWhenOpen = Settings.AddCheckBox(this, "dropOnlyWhenOpen", "Drop items only if the list is visible", true);
-			ShowMessages = Settings.AddCheckBox(this, "showMessages", "Show messages when failing to pick something up", true);
+			SettingShowMessages = Settings.AddCheckBox(this, "showMessages", "Show messages when failing to pick something up", true);
+			SettingPlaySounds = Settings.AddCheckBox(this, "playSounds", "Play a sound when opening or closing the GUI", true);
 
 			Settings.AddHeader(this, "Balance", headingColor, Color.white);
-			ItemLimit = Settings.AddTextBox(this, "itemCapacityString", "Item limit", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
+			SettingMaxSlots = Settings.AddTextBox(this, "maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 			Settings.AddText(this, "Determines how many items you can hold at a time. Suffering mode uses its own system and ignores this.");
 
 			Settings.AddHeader(this, "Suffering mode", headingColor, Color.white);
-			EnableSufferingMode = Settings.AddCheckBox(this, "simulateContainer", "Enable suffering mode", true);
+			SettingSufferingMode = Settings.AddCheckBox(this, "simulateContainer", "Enable suffering mode", true);
 			Settings.AddText(this, "Roughly simulates an actual container using weight and length limits. No volume, though! For true misery, cut the default values by three quarters to simulate jeans pockets.");
-			WeightLimit = Settings.AddTextBox(this, "weightLimitString", "Weight capacity (kg)", "16", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
-			LengthLimit = Settings.AddTextBox(this, "lengthLimitString", "Max item length (cm)", "40", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
+			SettingWeightLimit = Settings.AddTextBox(this, "weightLimitString", "Weight capacity (kg)", "16", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
+			SettingLengthLimit = Settings.AddTextBox(this, "lengthLimitString", "Max item length (cm)", "40", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 
 			Settings.AddHeader(this, "Debug", headingColor, Color.white);
-			LogSystem = Settings.AddCheckBox(this, "logSystem", "Log system messages", true);
-			LogSaveLoad = Settings.AddCheckBox(this, "logSaveLoad", "Log save/load logic", true);
-			LogPickupAndDrop = Settings.AddCheckBox(this, "logPickups", "Log pickup and drop events", false);
-			LogPickupLogic = Settings.AddCheckBox(this, "logPickupLogic", "Log pickup logic", false);
-			LogInvalidPickups = Settings.AddCheckBox(this, "logInvalids", "Log invalid pickup attempts", false);
-			LogRejectedPickups = Settings.AddCheckBox(this, "logRejected", "Log rejected pickup attempts", false);
+			Settings.AddText(this, "If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you can and should keep them all off.");
+			SettingLogSystem = Settings.AddCheckBox(this, "logSystem", "Log system messages", false);
+			SettingLogSaveLoad = Settings.AddCheckBox(this, "logSaveLoad", "Log save/load logic", false);
+			SettingLogPickupAndDrop = Settings.AddCheckBox(this, "logPickups", "Log pickup and drop events", false);
+			SettingLogPickupLogic = Settings.AddCheckBox(this, "logPickupLogic", "Log pickup logic", false);
 
 			Settings.AddHeader(this, "Danger zone", Color.red, Color.white);
-			DisableBlacklist = Settings.AddCheckBox(this, "disableBlacklist", "Disable blacklist", false);
-			Settings.AddText(this, "Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you know what you're doing or you're comfortable risking a broken save.");
-			/*Settings.AddButton(this, "Refresh in-game values", RefreshValues);
-			Settings.AddText(this, "Inventory details like item max, suffering mode, etc. are cached during game load and won't change mid-game on their own. This button forces the backpack to re-initialize, which will update any values that have been changed in the settings since the save was loaded.");*/
+			ettingDisableBlacklist = Settings.AddCheckBox(this, "disableBlacklist", "Disable blacklist", false);
+			Settings.AddText(this, "Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you're comfortable risking a broken save.");
 
-			Keybind.Add(this, _pickUpKey);
-			Keybind.Add(this, _dropAllKey);
-			Keybind.Add(this, _dropSelectedKey);
-			Keybind.Add(this, _toggleGuiKey);
+			Keybind.Add(this, KeybindPickUp);
+			Keybind.Add(this, KeybindDropAll);
+			Keybind.Add(this, KeybindDropSelected);
+			Keybind.Add(this, KeybindToggleGUI);
 		}
 		#endregion
 
 		#region Save/load
 		private void Mod_OnSave()
 		{
-			for (int i = 0; i < Inventory.Singleton.Items.Count; i++)
+			PrintToConsole($"Saving...", ConsoleMessageScope.SaveLoad);
+			for (int i = 0; i < InventoryHandler.Singleton.Items.Count; i++)
 			{
-				Inventory.Singleton.DropCurrent();
+				InventoryHandler.Singleton.DropCurrent();
 			}
 		}
 
@@ -108,9 +122,9 @@ namespace YAIM
 		{
 			Stopwatch stopwatch = new Stopwatch();
 			stopwatch.Start();
-			PrintToConsole("YAIM is attempting to initialize", YAIM.ConsoleMessageScope.System);
+			PrintToConsole($"{ID} version {Version} is attempting to initialize", ConsoleMessageScope.Core);
 
-			PrintToConsole("   Loading assets...", YAIM.ConsoleMessageScope.System);
+			PrintToConsole("Loading assets...", ConsoleMessageScope.System);
 			AssetBundle ab = LoadAssets.LoadBundle("YAIM.Assets.yaim_hud.unity3d");
 			GameObject go = ab.LoadAsset<GameObject>("YAIM HUD.prefab");
 			List<AudioClip> closeSounds = new List<AudioClip>();
@@ -124,25 +138,25 @@ namespace YAIM
 			}
 			ab.Unload(false);
 
-			PrintToConsole("   Instantiating canvas object...", YAIM.ConsoleMessageScope.System);
+			PrintToConsole("Instantiating canvas object...", ConsoleMessageScope.System);
 			GameObject gameObject = UnityEngine.Object.Instantiate(go);
 
-			PrintToConsole("   Initializing scripts...", YAIM.ConsoleMessageScope.System);
-			GameObject.Find("PLAYER").AddComponent<Inventory>();
+			PrintToConsole("Initializing scripts...", ConsoleMessageScope.System);
+			GameObject.Find("PLAYER").AddComponent<InventoryHandler>();
 			var handler = gameObject.AddComponent<UIHandler>();
 			handler.CloseSounds = closeSounds;
 			handler.OpenSounds = openSounds;
 			FailMessageText = FsmVariables.GlobalVariables.FindFsmString("GUIinteraction");
 
 			stopwatch.Stop();
-			PrintToConsole($"YAIM initialized after {Math.Round((float)stopwatch.Elapsed.Milliseconds, 2)} seconds!", YAIM.ConsoleMessageScope.System);
+			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
 		}
 		#endregion
 
 		#region Core logic
 		private void Mod_Update()
 		{
-			if (ModLoader.CurrentScene != CurrentScene.Game || !UIHandler.Singleton || !Inventory.Singleton)
+			if (ModLoader.CurrentScene != CurrentScene.Game || !UIHandler.Singleton || !InventoryHandler.Singleton)
 				return;
 			if (FailMessageTimer > 0)
 			{
@@ -167,7 +181,11 @@ namespace YAIM
 				UIHandler.Singleton.Refresh();
 			}
 
-			if (_pickUpKey.GetKeybindDown())
+			if (KeybindToggleGUI.GetKeybindDown())
+				UIHandler.Singleton.Toggle();
+			if (!UIHandler.Singleton.gameObject.activeSelf)
+				return;
+			if (KeybindPickUp.GetKeybindDown())
 			{
 				var hits = UnifiedRaycast.GetRaycastHits();
 				foreach (var hit in hits)
@@ -175,7 +193,7 @@ namespace YAIM
 					if (hit.distance <= 1f && hit.collider?.gameObject != null)
 					{
 						GameObject go = hit.collider.gameObject;
-						if (Inventory.Singleton.PickUp(go))
+						if (InventoryHandler.Singleton.AttemptPickUp(go))
 						{
 							UIHandler.Singleton.Refresh();
 							break;
@@ -183,66 +201,70 @@ namespace YAIM
 					}
 				}
 			}
-			if (_dropSelectedKey.GetKeybindDown())
+			else if (KeybindDropSelected.GetKeybindDown())
 			{
-				Inventory.Singleton.DropCurrent();
+				InventoryHandler.Singleton.DropCurrent();
 				UIHandler.Singleton.Refresh();
 			}
-			if (_toggleGuiKey.GetKeybindDown())
-			{
-				var handler = UIHandler.Singleton;
-				handler.gameObject.SetActive(!handler.gameObject.activeSelf);
-				var listToUse = handler.gameObject.activeSelf ? handler.OpenSounds : handler.CloseSounds;
-				AudioClip toPlay = listToUse[UnityEngine.Random.Range(0, listToUse.Count)];
-				handler.Audio.pitch = (float)(UnityEngine.Random.Range(90, 111)) / 100f;
-				handler.Audio.PlayOneShot(toPlay);
-				handler.Refresh();
-			}
-			if (UIHandler.Singleton.gameObject.activeSelf)
-			{
-				float scroll = Input.GetAxis("Mouse ScrollWheel");
-				if (scroll != 0f)
-				{
-					UIHandler.Singleton.AdjustActiveIndex(scroll < 0);
-				}
-			}
+			float scroll = Input.GetAxis("Mouse ScrollWheel");
+			if (scroll != 0f)
+				UIHandler.Singleton.AdjustActiveIndex(scroll < 0);
 		}
 
-		internal static void ThrowMessage(string message)
+		/// <summary>
+		/// Throws a readable failure message with the provided contents for 1 second.
+		/// </summary>
+		/// <param name="Message">The message to display.</param>
+		internal static void ThrowMessage(string Message)
 		{
-			if (!ShowMessages.GetValue())
+			if (!SettingShowMessages.GetValue())
 				return;
-			FailMessage = message;
+			FailMessage = Message;
 			FailMessageTimer = 1f;
 		}
+
+		/// <summary>
+		/// Wrapper for calls <see cref="InventoryHandler.SetupValues"/>. Wrapping it in a function lets us make it nullable to avoid runtimes.
+		/// </summary>
+		private void RefreshValues() => InventoryHandler.Singleton?.SetupValues();
 		#endregion
 
 		#region Debug
+		/// <summary>
+		/// Used to track the context of a given debug message.
+		/// </summary>
 		internal enum ConsoleMessageScope
 		{
-			System,
-			SaveLoad,
-			PickupAndDrop,
-			PickupLogic,
-			InvalidPickups,
-			RejectedPickups
+			// Important stuff!
+			Core, // Core logic that we always log
+			System, // Intermediary steps in initialization
+			SaveLoad, // Saving and loading items
+
+			// Not as important, but still good to know
+			PickupAndDrop, // Picking up and dropping items
+
+			// Very granular info -- should skip outside of thorough debugging
+			PickupLogic, // Detailed steps for each attempted item pickup, including reasons for failed pickups
 		}
 
-		internal static void PrintToConsole(string msg, ConsoleMessageScope scope)
+		/// <summary>
+		/// Creates a debug message with the provided contents and scope.
+		/// Each scope has an associated setting variable; that way, we can
+		/// use settings to curate which messages appear in the console and which ones we gloss over.
+		/// </summary>
+		/// <param name="Message">The contents of the debug message.</param>
+		/// <param name="Context">The context of the message.</param>
+		internal static void PrintToConsole(string Message, ConsoleMessageScope Context)
 		{
-			if (scope == ConsoleMessageScope.System && !LogSystem.GetValue())
+			if (Context == ConsoleMessageScope.System && !SettingLogSystem.GetValue())
 				return;
-			else if (scope == ConsoleMessageScope.SaveLoad && !LogSaveLoad.GetValue())
+			else if (Context == ConsoleMessageScope.SaveLoad && !SettingLogSaveLoad.GetValue())
 				return;
-			else if (scope == ConsoleMessageScope.PickupAndDrop && !LogPickupAndDrop.GetValue())
+			else if (Context == ConsoleMessageScope.PickupAndDrop && !SettingLogPickupAndDrop.GetValue())
 				return;
-			else if (scope == ConsoleMessageScope.PickupLogic && !LogPickupLogic.GetValue())
+			else if (Context == ConsoleMessageScope.PickupLogic && !SettingLogPickupLogic.GetValue())
 				return;
-			else if (scope == ConsoleMessageScope.InvalidPickups && !LogInvalidPickups.GetValue())
-				return;
-			else if (scope == ConsoleMessageScope.RejectedPickups && !LogRejectedPickups.GetValue())
-				return;
-			ModConsole.Print(msg);
+			ModConsole.Print($"[YAIM] {Message}");
 		}
 		#endregion
 	}

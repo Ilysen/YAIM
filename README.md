@@ -1,8 +1,8 @@
 # Big giant TODO
 
 * Include Unity and font files in repo (check attribution for font)
-* Cleanliness pass -- proper regioning, etc
 * Save/load
+* Drop All functionality (should probably hold to do)
 
 # Yet Another Inventory Mod
 
