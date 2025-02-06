@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MSCLoader;
+using System;
 using System.Collections.Generic;
 using System.Runtime.Remoting.Contexts;
 using UnityEngine;
@@ -106,7 +107,7 @@ namespace Ceres.YAIM.UI
 					{
 						YAIM.PrintToConsole("Creating new entry...", YAIM.ConsoleMessageScope.System);
 						GameObject newEntry = GameObject.Instantiate(Entries[0].gameObject);
-						newEntry.transform.parent = EntriesGroup;
+						newEntry.transform.SetParent(EntriesGroup, false);
 						Entries.Add(newEntry);
 					}
 					// ...and if removing objects, we destroy entries starting from the end of the list
@@ -166,6 +167,7 @@ namespace Ceres.YAIM.UI
 			//
 			// The dark secret here is that, due to rendering order, the text object itself *is* actually the shadow;
 			// the colored text that's meant to actually be read is the child object!
+			Text.gameObject.name = Contents;
 			Text.text = Contents;
 			var textBody = Text.transform.FindChild("Body")?.GetComponent<Text>();
 			if (textBody != null)

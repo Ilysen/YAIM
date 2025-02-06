@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using Ceres.YAIM.UI;
+using HutongGames.PlayMaker.Actions;
 
 namespace Ceres.YAIM
 {
@@ -21,8 +22,8 @@ namespace Ceres.YAIM
 
 		public override void ModSetup()
 		{
+			SetupFunction(Setup.PreLoad, Mod_PreLoad);
 			SetupFunction(Setup.OnLoad, Mod_Load);
-			SetupFunction(Setup.OnSave, Mod_OnSave);
 			SetupFunction(Setup.Update, Mod_Update);
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
@@ -46,7 +47,7 @@ namespace Ceres.YAIM
 		internal static SettingsCheckBox SettingLogPickupAndDrop;
 		internal static SettingsCheckBox SettingLogPickupLogic;
 
-		internal static SettingsCheckBox ettingDisableBlacklist;
+		internal static SettingsCheckBox SettingDisableBlacklist;
 
 		/// <summary>
 		/// When this value reaches 0, the interface will automatically be refreshed.
@@ -68,6 +69,17 @@ namespace Ceres.YAIM
 		/// The <see cref="FsmString"/> whose value we're overriding with <see cref="FailMessage"/>.
 		/// </summary>
 		private FsmString FailMessageText;
+
+		/// <summary>
+		/// A list of <see cref="GameObject"/>s near the temp point when the scene preloads.
+		/// Used to detect objects that should be picked back up after a save/load.
+		/// </summary>
+		internal static HashSet<GameObject> LoadedColliders;
+
+		/// <summary>
+		/// The <see cref="GameObject"/> with an active <see cref="LoadCatcher"/>, used to "catch" saved objects during preload.
+		/// </summary>
+		private GameObject LoadCatcher;
 
 		private void Mod_Settings()
 		{
@@ -98,7 +110,7 @@ namespace Ceres.YAIM
 			SettingLogPickupLogic = Settings.AddCheckBox(this, "logPickupLogic", "Log pickup logic", false);
 
 			Settings.AddHeader(this, "Danger zone", Color.red, Color.white);
-			ettingDisableBlacklist = Settings.AddCheckBox(this, "disableBlacklist", "Disable blacklist", false);
+			SettingDisableBlacklist = Settings.AddCheckBox(this, "disableBlacklist", "Disable blacklist", false);
 			Settings.AddText(this, "Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you're comfortable risking a broken save.");
 
 			Keybind.Add(this, KeybindPickUp);
@@ -109,13 +121,23 @@ namespace Ceres.YAIM
 		#endregion
 
 		#region Save/load
-		private void Mod_OnSave()
+		private void Mod_PreLoad()
 		{
-			PrintToConsole($"Saving...", ConsoleMessageScope.SaveLoad);
-			for (int i = 0; i < InventoryHandler.Singleton.Items.Count; i++)
-			{
-				InventoryHandler.Singleton.DropCurrent();
-			}
+			// Our save/load system is done in a bit of a roundabout way.
+			// Due to MSCLoader running its save methods *after* vanilla MSC's, objects and items in storage
+			// will be saved at the location of TempPosition.
+			//
+			// To load these objects, we create a GameObject here (before physics start) with a script that aggressively checks for objects near itself,
+			// and then in the regular load function, we iterate through that cache and add any valid objects to the inventory.
+			// This is rather messy, but it lets us reliably(?) "load" stored items without requiring any new save data.
+
+			PrintToConsole("Initializing load catcher...", ConsoleMessageScope.System);
+			LoadedColliders = new HashSet<GameObject>();
+			LoadCatcher = Ceres.YAIM.LoadCatcher.Create(InventoryHandler.TempPosition);
+			if (LoadCatcher != null)
+				PrintToConsole("Load catcher has been initialized and will detect any saved items.", ConsoleMessageScope.System);
+			else
+				ModConsole.LogError("Load catcher failed to init! Saved objects will not be detected! Report this to the mod author!");
 		}
 
 		private void Mod_Load()
@@ -126,7 +148,7 @@ namespace Ceres.YAIM
 
 			PrintToConsole("Loading assets...", ConsoleMessageScope.System);
 			AssetBundle ab = LoadAssets.LoadBundle("YAIM.Assets.yaim_hud.unity3d");
-			GameObject go = ab.LoadAsset<GameObject>("YAIM HUD.prefab");
+			GameObject hudObject = ab.LoadAsset<GameObject>("YAIM HUD.prefab");
 			List<AudioClip> closeSounds = new List<AudioClip>();
 			List<AudioClip> openSounds = new List<AudioClip>();
 			foreach (var asset in ab.LoadAllAssets<AudioClip>())
@@ -139,7 +161,7 @@ namespace Ceres.YAIM
 			ab.Unload(false);
 
 			PrintToConsole("Instantiating canvas object...", ConsoleMessageScope.System);
-			GameObject gameObject = UnityEngine.Object.Instantiate(go);
+			GameObject gameObject = UnityEngine.Object.Instantiate(hudObject);
 
 			PrintToConsole("Initializing scripts...", ConsoleMessageScope.System);
 			GameObject.Find("PLAYER").AddComponent<InventoryHandler>();
@@ -147,6 +169,23 @@ namespace Ceres.YAIM
 			handler.CloseSounds = closeSounds;
 			handler.OpenSounds = openSounds;
 			FailMessageText = FsmVariables.GlobalVariables.FindFsmString("GUIinteraction");
+
+			if (LoadedColliders.Count == 0)
+				PrintToConsole("Found no saved items.", ConsoleMessageScope.SaveLoad);
+			else
+			{
+				PrintToConsole("Loading saved items...", ConsoleMessageScope.SaveLoad);
+				int loadedItems = 0;
+				foreach (GameObject go in LoadedColliders)
+				{
+					if (InventoryHandler.Singleton.AttemptPickUp(go))
+						loadedItems++;
+				}
+				PrintToConsole($"Loaded {loadedItems} saved item(s) to the inventory; {LoadedColliders.Count - loadedItems} collider(s) filtered out.", ConsoleMessageScope.SaveLoad);
+			}
+
+			PrintToConsole("Destroying load catcher...", ConsoleMessageScope.System);
+			GameObject.Destroy(LoadCatcher);
 
 			stopwatch.Stop();
 			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
@@ -156,6 +195,7 @@ namespace Ceres.YAIM
 		#region Core logic
 		private void Mod_Update()
 		{
+			//ModConsole.Print($"Fuelpump transform: {(fuelPump != null ? fuelPump.transform.position.ToString() : "NULL")}");
 			if (ModLoader.CurrentScene != CurrentScene.Game || !UIHandler.Singleton || !InventoryHandler.Singleton)
 				return;
 			if (FailMessageTimer > 0)
@@ -175,7 +215,7 @@ namespace Ceres.YAIM
 			// We need to occasionally refresh the interface to account for things like food spoilage
 			// Instead of doing it every frame, we only do it every 30 seconds to preserve performance
 			RefreshTimer -= Time.deltaTime;
-			if (RefreshTimer < 0)
+			if (RefreshTimer < 0 && UIHandler.Singleton.gameObject.activeSelf)
 			{
 				RefreshTimer = 30f;
 				UIHandler.Singleton.Refresh();
@@ -185,7 +225,9 @@ namespace Ceres.YAIM
 				UIHandler.Singleton.Toggle();
 			if (!UIHandler.Singleton.gameObject.activeSelf)
 				return;
-			if (KeybindPickUp.GetKeybindDown())
+			if (KeybindDropAll.GetKeybindDown())
+				InventoryHandler.Singleton.DropAll();
+			else if (KeybindPickUp.GetKeybindDown())
 			{
 				var hits = UnifiedRaycast.GetRaycastHits();
 				foreach (var hit in hits)

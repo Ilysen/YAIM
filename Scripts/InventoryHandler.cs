@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Ceres.YAIM.UI;
+using MSCLoader;
 
 namespace Ceres.YAIM
 {
@@ -50,7 +51,7 @@ namespace Ceres.YAIM
 		/// <summary>
 		/// Objects are placed at this set of coordinates when they're "in" storage.
 		/// </summary>
-		internal static readonly Vector3 TempPosition = new Vector3(0.0f, -1000.0f, 0.0f);
+		internal static readonly Vector3 TempPosition = new Vector3(0.0f, 1000.0f, 0.0f);
 
 		/// <summary>
 		/// A list of every <see cref="GameObject"/> currently held in the inventory.
@@ -127,8 +128,15 @@ namespace Ceres.YAIM
 		{
 			YAIM.PrintToConsole($"Checking pickup eligibility for object named {Target.name}", YAIM.ConsoleMessageScope.PickupLogic);
 
+			// Before checking criteria, ensure that this wouldn't be a duplicate (this can happen during save-load)
+			if (Items.Contains(Target))
+			{
+				YAIM.PrintToConsole($"Failed to pick up {Target.name}; object already in inventory", YAIM.ConsoleMessageScope.PickupLogic);
+				return false;
+			}
+
 			// 1. Is it blacklisted?
-			if (!YAIM.ettingDisableBlacklist.GetValue() && Array.Exists(Blacklist, e => e == Target.name))
+			if (!YAIM.SettingDisableBlacklist.GetValue() && Array.Exists(Blacklist, e => e == Target.name))
 			{
 				YAIM.PrintToConsole($"Failed to pick up {Target.name}; blacklisted", YAIM.ConsoleMessageScope.PickupLogic);
 				YAIM.ThrowMessage($"IT WON'T FIT, SILLY! (BLACKLISTED)");
@@ -280,20 +288,39 @@ namespace Ceres.YAIM
 		/// Physics will immediately resume and the object will be dropped 1m in front of the camera.
 		/// Also updates mass.
 		/// </summary>
-		internal void DropCurrent()
+		/// <param name="Position">An optional position that the item will be dropped at.</param>
+		internal void DropCurrent(Vector3? Position = null)
 		{
+			if (Position == null)
+				Position = Camera.main.transform.position + (Camera.main.transform.forward * 1.0f);
 			GameObject go = Items[UIHandler.Singleton.CurIndex];
 			YAIM.PrintToConsole($"Attempting to drop an object named {go.name}...", YAIM.ConsoleMessageScope.PickupLogic);
 			Rigidbody rb = go.GetComponent<Rigidbody>();
 			rb.isKinematic = false;
-			go.transform.position = Camera.main.transform.position + (Camera.main.transform.forward * 1.0f);
+			go.transform.position = (Vector3)Position;
 			Items.Remove(go);
-			UIHandler.Singleton.CurIndex = Math.Max(0, Math.Min(UIHandler.Singleton.CurIndex, Items.Count));
+			UIHandler.Singleton.CurIndex = Math.Max(0, Math.Min(UIHandler.Singleton.CurIndex - 1, Items.Count));
 			UpdateMass();
 			string suffix = $"now at {Items.Count} / {MaxSlots} items";
 			if (SufferingMode)
 				suffix = $"weighs {rb.mass}, now at {Mass} kg / {MassCapacity} kg";
 			YAIM.PrintToConsole($"Successfully removed {go.name} from the inventory ({suffix})", YAIM.ConsoleMessageScope.PickupAndDrop);
+		}
+
+		/// <summary>
+		/// Drops all stored items at the provided position. If no position is provided, <see cref="DropCurrent(Vector3?)"/> will use its default fallback.
+		/// </summary>
+		/// <param name="Position">An optional position that the item(s) will be dropped at.</param>
+		internal void DropAll(Vector3? Position = null)
+		{
+			YAIM.PrintToConsole($"Attempting to drop all objects at position {(Position != null ? Position.ToString() : "NULL")}", YAIM.ConsoleMessageScope.PickupAndDrop);
+			foreach (var item in Items.ToArray()) // This sucks but it's less of a headache than writing a for() right now. I'm sleepy.
+				DropCurrent(Position);
+			if (Items.Count > 0)
+				ModConsole.LogError("[YAIM] The inventory attempted to save but not every item was dropped! Report this to the mod author!");
+			else
+				YAIM.PrintToConsole("Dropped all items.", YAIM.ConsoleMessageScope.PickupAndDrop);
+			UIHandler.Singleton.Refresh();
 		}
 
 		/// <summary>
