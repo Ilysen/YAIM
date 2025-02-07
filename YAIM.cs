@@ -178,7 +178,7 @@ namespace Ceres.YAIM
 				int loadedItems = 0;
 				foreach (GameObject go in LoadedColliders)
 				{
-					if (InventoryHandler.Singleton.AttemptPickUp(go))
+					if (InventoryHandler.Singleton.AttemptPickUp(go, true))
 						loadedItems++;
 				}
 				PrintToConsole($"Loaded {loadedItems} saved item(s) to the inventory; {LoadedColliders.Count - loadedItems} collider(s) filtered out.", ConsoleMessageScope.SaveLoad);
