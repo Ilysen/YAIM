@@ -262,7 +262,7 @@ namespace Ceres.YAIM
 		internal bool AttemptPickUp(GameObject Target, bool BypassLimit = false)
 		{
 			YAIM.PrintToConsole($"Attempting to pick up an object named {Target.name}...", YAIM.ConsoleMessageScope.PickupLogic);
-			if (!CanPickUp(Target))
+			if (!CanPickUp(Target, BypassLimit))
 			{
 				YAIM.PrintToConsole($"Pickup attempt failed", YAIM.ConsoleMessageScope.PickupLogic);
 				return false;

@@ -24,6 +24,7 @@ namespace Ceres.YAIM
 		{
 			SetupFunction(Setup.PreLoad, Mod_PreLoad);
 			SetupFunction(Setup.OnLoad, Mod_Load);
+			SetupFunction(Setup.PostLoad, Mod_PostLoad);
 			SetupFunction(Setup.Update, Mod_Update);
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
@@ -85,22 +86,22 @@ namespace Ceres.YAIM
 		{
 			Color headingColor = new Color(0.1f, 0.1f, 0.1f);
 
-			Settings.AddButton(this, "Refresh in-game values", RefreshValues);
 			Settings.AddText(this, "Inventory details like item max, suffering mode, etc. are cached during game load and won't change mid-game on their own. This button forces the inventory to re-initialize, which will update any values that have been changed in the settings since the save was loaded.");
+			Settings.AddButton(this, "Re-initialize inventory", RefreshValues);
 
 			Settings.AddHeader(this, "System", headingColor, Color.white);
 			SettingShowMessages = Settings.AddCheckBox(this, "showMessages", "Show messages when failing to pick something up", true);
 			SettingPlaySounds = Settings.AddCheckBox(this, "playSounds", "Play a sound when opening or closing the GUI", true);
 
-			Settings.AddHeader(this, "Balance", headingColor, Color.white);
-			SettingMaxSlots = Settings.AddTextBox(this, "maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
-			Settings.AddText(this, "Determines how many items you can hold at a time. Suffering mode uses its own system and ignores this.");
-
-			Settings.AddHeader(this, "Suffering mode", headingColor, Color.white);
+			Settings.AddHeader(this, "Balance (Suffering Mode)", headingColor, Color.white);
 			SettingSufferingMode = Settings.AddCheckBox(this, "simulateContainer", "Enable suffering mode", true);
 			Settings.AddText(this, "Roughly simulates an actual container using weight and length limits. No volume, though! For true misery, cut the default values by three quarters to simulate jeans pockets.");
 			SettingWeightLimit = Settings.AddTextBox(this, "weightLimitString", "Weight capacity (kg)", "16", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 			SettingLengthLimit = Settings.AddTextBox(this, "lengthLimitString", "Max item length (cm)", "40", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
+
+			Settings.AddHeader(this, "Balance (Regular Mode)", headingColor, Color.white);
+			SettingMaxSlots = Settings.AddTextBox(this, "maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
+			Settings.AddText(this, "Determines how many items you can hold at a time. <b>Suffering mode uses its own system and ignores whatever's entered here.</b>");
 
 			Settings.AddHeader(this, "Debug", headingColor, Color.white);
 			Settings.AddText(this, "If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you can and should keep them all off.");
@@ -170,8 +171,16 @@ namespace Ceres.YAIM
 			handler.OpenSounds = openSounds;
 			FailMessageText = FsmVariables.GlobalVariables.FindFsmString("GUIinteraction");
 
+			stopwatch.Stop();
+			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
+		}
+
+		private void Mod_PostLoad()
+		{
+			// Handle loading saved items in post-load instead of regular load, to allow for modded items to initialize beforehand and thus be picked up
+			PrintToConsole("Detecting saved items...", ConsoleMessageScope.SaveLoad);
 			if (LoadedColliders.Count == 0)
-				PrintToConsole("Found no saved items.", ConsoleMessageScope.SaveLoad);
+				PrintToConsole("Found no saved items to load.", ConsoleMessageScope.SaveLoad);
 			else
 			{
 				PrintToConsole("Loading saved items...", ConsoleMessageScope.SaveLoad);
@@ -186,9 +195,6 @@ namespace Ceres.YAIM
 
 			PrintToConsole("Destroying load catcher...", ConsoleMessageScope.System);
 			GameObject.Destroy(LoadCatcher);
-
-			stopwatch.Stop();
-			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
 		}
 		#endregion
 
