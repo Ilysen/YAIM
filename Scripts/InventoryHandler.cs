@@ -106,7 +106,7 @@ namespace Ceres.YAIM
 		{
 			YAIM.PrintToConsole("InventoryHandler is setting up values...", YAIM.ConsoleMessageScope.System);
 			MaxSlots = Math.Min((byte)15, byte.Parse(YAIM.SettingMaxSlots.GetValue()));
-			SufferingMode = YAIM.SettingSufferingMode.GetValue();
+			SufferingMode = !YAIM.SettingLegacyMode.GetValue();
 			MassCapacity = float.Parse(YAIM.SettingWeightLimit.GetValue());
 			MaxLength = float.Parse(YAIM.SettingLengthLimit.GetValue()) / 100f;
 			YAIM.PrintToConsole($"InventoryHandler has set up values (suffering mode {SufferingMode})", YAIM.ConsoleMessageScope.System);

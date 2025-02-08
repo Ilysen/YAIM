@@ -37,7 +37,7 @@ namespace Ceres.YAIM
 		internal static SettingsCheckBox SettingShowMessages;
 		internal static SettingsCheckBox SettingPlaySounds;
 
-		internal static SettingsCheckBox SettingSufferingMode;
+		internal static SettingsCheckBox SettingLegacyMode;
 
 		internal static SettingsTextBox SettingMaxSlots;
 		internal static SettingsTextBox SettingWeightLimit;
@@ -86,20 +86,21 @@ namespace Ceres.YAIM
 		{
 			Color headingColor = new Color(0.1f, 0.1f, 0.1f);
 
-			Settings.AddText(this, "Inventory details like item max, suffering mode, etc. are cached during game load and won't change mid-game on their own. This button forces the inventory to re-initialize, which will update any values that have been changed in the settings since the save was loaded.");
+			Settings.AddText(this, "Inventory details are cached during game load and won't change mid-game on their own. This button forces the inventory to re-initialize, which will update any values that have been changed in the settings since the save was loaded.");
 			Settings.AddButton(this, "Re-initialize inventory", RefreshValues);
 
 			Settings.AddHeader(this, "System", headingColor, Color.white);
 			SettingShowMessages = Settings.AddCheckBox(this, "showMessages", "Show messages when failing to pick something up", true);
 			SettingPlaySounds = Settings.AddCheckBox(this, "playSounds", "Play a sound when opening or closing the GUI", true);
 
-			Settings.AddHeader(this, "Balance (Suffering Mode)", headingColor, Color.white);
-			SettingSufferingMode = Settings.AddCheckBox(this, "simulateContainer", "Enable suffering mode", true);
-			Settings.AddText(this, "Roughly simulates an actual container using weight and length limits. No volume, though! For true misery, cut the default values by three quarters to simulate jeans pockets.");
+			Settings.AddHeader(this, "Balance", headingColor, Color.white);
+			Settings.AddText(this, "For true misery, cut the default values by three quarters to simulate jeans pockets.");
 			SettingWeightLimit = Settings.AddTextBox(this, "weightLimitString", "Weight capacity (kg)", "16", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 			SettingLengthLimit = Settings.AddTextBox(this, "lengthLimitString", "Max item length (cm)", "40", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 
-			Settings.AddHeader(this, "Balance (Regular Mode)", headingColor, Color.white);
+			Settings.AddHeader(this, "Legacy Mode", headingColor, Color.white);
+			SettingLegacyMode = Settings.AddCheckBox(this, "legacyMode", "Enable legacy mode", false);
+			Settings.AddText(this, "Capacity is determined by a flat number of items, rather than weight limit.");
 			SettingMaxSlots = Settings.AddTextBox(this, "maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 			Settings.AddText(this, "Determines how many items you can hold at a time. <b>Suffering mode uses its own system and ignores whatever's entered here.</b>");
 
