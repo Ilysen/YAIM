@@ -104,7 +104,6 @@ namespace Ceres.YAIM
 			SettingLegacyMode = Settings.AddCheckBox(this, "legacyMode", "Enable legacy mode", false);
 			Settings.AddText(this, "Capacity is determined by a flat number of items, rather than weight limit.");
 			SettingMaxSlots = Settings.AddTextBox(this, "maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
-			Settings.AddText(this, "Determines how many items you can hold at a time. <b>Suffering mode uses its own system and ignores whatever's entered here.</b>");
 
 			Settings.AddHeader(this, "Debug", headingColor, Color.white);
 			Settings.AddText(this, "If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you can and should keep them all off.");
