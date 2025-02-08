@@ -15,7 +15,7 @@ Due to some chicanery and lost files on my end, I haven't uploaded the Unity pre
 
 ## Changelog
 
-### 6 February 2025
+### 8 February 2025
 
-#### Version 0.1
-* Indev.
+#### Version 1.0
+* Initial public release after lots of playtesting. Should work okay!
