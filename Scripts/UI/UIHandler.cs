@@ -93,7 +93,7 @@ namespace Ceres.YAIM.UI
 			if (!inventory.SufferingMode)
 				UpdateText(Header, $"INVENTORY ({inventory.Items.Count}/{inventory.MaxSlots})", DefaultTextColor);
 			else
-				UpdateText(Header, $"INVENTORY ({inventory.Mass} KG / {inventory.MassCapacity} KG)", DefaultTextColor);
+				UpdateText(Header, $"INVENTORY ({Math.Round(inventory.Mass, 2)} KG / {inventory.MassCapacity} KG)", DefaultTextColor);
 
 			// Calculate and handle changes in the number of entry objects
 			int difference = inventory.Items.Count - Entries.Count;

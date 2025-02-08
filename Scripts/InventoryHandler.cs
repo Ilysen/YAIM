@@ -202,7 +202,7 @@ namespace Ceres.YAIM
 					if (!BypassLimit && MassCapacity - Mass < rb.mass)
 					{
 						YAIM.PrintToConsole($"Failed to pick up {Target.name}; too heavy (weighs {rb.mass}, can only store {MassCapacity - Mass})", YAIM.ConsoleMessageScope.PickupLogic);
-						YAIM.ThrowMessage($"TOO HEAVY (WEIGHS {Math.Round(rb.mass, 2)} KG, ONLY {MassCapacity - Mass} KG OF STORAGE)");
+						YAIM.ThrowMessage($"TOO HEAVY (WEIGHS {Math.Round(rb.mass, 2)} KG, ONLY {Math.Round(MassCapacity - Mass, 2)} KG OF STORAGE)");
 						return false;
 					}
 
@@ -297,7 +297,7 @@ namespace Ceres.YAIM
 			YAIM.PrintToConsole($"Attempting to drop an object named {go.name}...", YAIM.ConsoleMessageScope.PickupLogic);
 			Rigidbody rb = go.GetComponent<Rigidbody>();
 			rb.isKinematic = false;
-			go.transform.position = (Vector3)Position;
+			go.transform.localPosition = (Vector3)Position;
 			Items.Remove(go);
 			UIHandler.Singleton.CurIndex = Math.Max(0, Math.Min(UIHandler.Singleton.CurIndex - 1, Items.Count));
 			UpdateMass();

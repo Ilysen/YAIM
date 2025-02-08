@@ -29,10 +29,12 @@ namespace Ceres.YAIM
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
 
-		private readonly Keybind KeybindToggleGUI = new Keybind("ToggleGUI", "Open or close inventory list", KeyCode.X);
+		private readonly Keybind KeybindToggleGUI = new Keybind("toggleGUI", "Open or close inventory list", KeyCode.X);
 		private readonly Keybind KeybindPickUp = new Keybind("pickUp", "Pick up an item", KeyCode.E);
 		private readonly Keybind KeybindDropSelected = new Keybind("dropSelected", "Drop selected item", KeyCode.Y);
 		private readonly Keybind KeybindDropAll = new Keybind("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
+		private readonly Keybind KeybindScrollUp = new Keybind("scrollUp", "Scroll up", KeyCode.None);
+		private readonly Keybind KeybindScrollDown = new Keybind("scrollDown", "Scroll down", KeyCode.None);
 
 		internal static SettingsCheckBox SettingShowMessages;
 		internal static SettingsCheckBox SettingPlaySounds;
@@ -119,6 +121,9 @@ namespace Ceres.YAIM
 			Keybind.Add(this, KeybindDropAll);
 			Keybind.Add(this, KeybindDropSelected);
 			Keybind.Add(this, KeybindToggleGUI);
+			Keybind.AddHeader(this, "Optional");
+			Keybind.Add(this, KeybindScrollUp);
+			Keybind.Add(this, KeybindScrollDown);
 		}
 		#endregion
 
@@ -258,6 +263,10 @@ namespace Ceres.YAIM
 			float scroll = Input.GetAxis("Mouse ScrollWheel");
 			if (scroll != 0f)
 				UIHandler.Singleton.AdjustActiveIndex(scroll < 0);
+			else if (KeybindScrollDown.GetKeybindDown())
+				UIHandler.Singleton.AdjustActiveIndex(true); // Since the list goes up instead of down, this is technically inverted
+			else if (KeybindScrollUp.GetKeybindDown())
+				UIHandler.Singleton.AdjustActiveIndex(false);
 		}
 
 		/// <summary>
