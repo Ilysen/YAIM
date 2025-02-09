@@ -15,8 +15,7 @@ namespace Ceres.YAIM
 	internal class LoadCatcher : MonoBehaviour
 	{
 		/// <summary>
-		/// Keeps track of how long this load catcher has existed for.
-		/// Unless aggressive loading is enabled, the catcher will self-destruct after existing for 10 seconds.
+		/// Keeps track of how long this load catcher has existed for. This is only used for debug.
 		/// </summary>
 		private float TimeElapsed = 0f;
 
@@ -37,15 +36,7 @@ namespace Ceres.YAIM
 			}
 		}
 
-		private void Update()
-		{
-			TimeElapsed += Time.deltaTime;
-			if (TimeElapsed >= 10f && !YAIM.SettingAggressiveLoading.GetValue())
-			{
-				YAIM.PrintToConsole("Load catcher lifespan has exceeded 10 seconds. Unpacking cached colliders.", YAIM.ConsoleMessageScope.SaveLoad);
-				YAIM.Singleton.UnpackCachedColliders();
-			}
-		}
+		private void Update() => TimeElapsed += Time.deltaTime;
 
 		/// <summary>
 		/// Creates a <see cref="GameObject"/> at the provided position with a <see cref="LoadCatcher"/> component to grab everything within a 25m radius.

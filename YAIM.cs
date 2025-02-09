@@ -25,6 +25,7 @@ namespace Ceres.YAIM
 		{
 			SetupFunction(Setup.PreLoad, Mod_PreLoad);
 			SetupFunction(Setup.OnLoad, Mod_Load);
+			SetupFunction(Setup.PostLoad, Mod_PostLoad);
 			SetupFunction(Setup.Update, Mod_Update);
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
@@ -182,6 +183,12 @@ namespace Ceres.YAIM
 
 			stopwatch.Stop();
 			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
+		}
+
+		private void Mod_PostLoad()
+		{
+			if (!SettingAggressiveLoading.GetValue())
+				UnpackCachedColliders();
 		}
 
 		/// <summary>
