@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿using Ceres.YAIM.UI;
+using MSCLoader;
+using System;
+using System.Linq;
+using UnityEngine;
 
 namespace Ceres.YAIM
 {
@@ -10,13 +14,19 @@ namespace Ceres.YAIM
 	/// </summary>
 	internal class LoadCatcher : MonoBehaviour
 	{
+		/// <summary>
+		/// Keeps track of how long this load catcher has existed for.
+		/// Unless aggressive loading is enabled, the catcher will self-destruct after existing for 10 seconds.
+		/// </summary>
+		private float TimeElapsed = 0f;
+
 		private void OnTriggerEnter(Collider other) => CacheObj(other.gameObject);
 
 		private void OnTriggerStay(Collider other) => CacheObj(other.gameObject);
 
 		private void OnTriggerExit(Collider other) => CacheObj(other.gameObject);
 
-		private void OnDestroy() => YAIM.PrintToConsole("Load catcher destroyed", YAIM.ConsoleMessageScope.SaveLoad);
+		private void OnDestroy() => YAIM.PrintToConsole($"Load catcher destroyed after {Math.Round(TimeElapsed, 2)} second(s) active.", YAIM.ConsoleMessageScope.SaveLoad);
 
 		private void CacheObj(GameObject Object)
 		{
@@ -24,6 +34,16 @@ namespace Ceres.YAIM
 			{
 				YAIM.LoadedColliders.Add(Object);
 				YAIM.PrintToConsole($"Detected an object named {Object.name} in the load catcher. Caching.", YAIM.ConsoleMessageScope.SaveLoad);
+			}
+		}
+
+		private void Update()
+		{
+			TimeElapsed += Time.deltaTime;
+			if (TimeElapsed >= 10f && !YAIM.SettingAggressiveLoading.GetValue())
+			{
+				YAIM.PrintToConsole("Load catcher lifespan has exceeded 10 seconds. Unpacking cached colliders.", YAIM.ConsoleMessageScope.SaveLoad);
+				YAIM.Singleton.UnpackCachedColliders();
 			}
 		}
 

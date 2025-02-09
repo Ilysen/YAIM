@@ -1,10 +1,9 @@
-﻿using HutongGames.PlayMaker;
+﻿using Ceres.YAIM.UI;
+using HutongGames.PlayMaker;
 using MSCLoader;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
-using Ceres.YAIM.UI;
-using HutongGames.PlayMaker.Actions;
 
 namespace Ceres.YAIM
 {
@@ -20,11 +19,12 @@ namespace Ceres.YAIM
 		public override string Version => "0.1";
 		public override string Description => "Carry stuff around! A spiritual successor to many other backpack mods.";
 
+		internal static YAIM Singleton;
+
 		public override void ModSetup()
 		{
 			SetupFunction(Setup.PreLoad, Mod_PreLoad);
 			SetupFunction(Setup.OnLoad, Mod_Load);
-			SetupFunction(Setup.PostLoad, Mod_PostLoad);
 			SetupFunction(Setup.Update, Mod_Update);
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
@@ -51,6 +51,7 @@ namespace Ceres.YAIM
 		internal static SettingsCheckBox SettingLogPickupLogic;
 
 		internal static SettingsCheckBox SettingDisableBlacklist;
+		internal static SettingsCheckBox SettingAggressiveLoading;
 
 		/// <summary>
 		/// When this value reaches 0, the interface will automatically be refreshed.
@@ -115,6 +116,8 @@ namespace Ceres.YAIM
 			Settings.AddHeader(this, "Danger zone", Color.red, Color.white);
 			SettingDisableBlacklist = Settings.AddCheckBox(this, "disableBlacklist", "Disable blacklist", false);
 			Settings.AddText(this, "Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you're comfortable risking a broken save.");
+			SettingAggressiveLoading = Settings.AddCheckBox(this, "aggressiveLoading", "Aggressive loading", false);
+			Settings.AddText(this, "If your items are lost when saving and loading, try enabling this option. This will result in worse performance until the inventory is opened for the first time each load.");
 
 			Keybind.Add(this, KeybindPickUp);
 			Keybind.Add(this, KeybindDropAll);
@@ -137,6 +140,7 @@ namespace Ceres.YAIM
 			// and then in the regular load function, we iterate through that cache and add any valid objects to the inventory.
 			// This is rather messy, but it lets us reliably(?) "load" stored items without requiring any new save data.
 
+			Singleton = this; // There's almost certainly a built-in way to reference the mod instance in MSCLoader, but I don't know of it. teehee!
 			PrintToConsole("Initializing load catcher...", ConsoleMessageScope.System);
 			LoadedColliders = new HashSet<GameObject>();
 			LoadCatcher = Ceres.YAIM.LoadCatcher.Create(InventoryHandler.TempPosition);
@@ -180,7 +184,12 @@ namespace Ceres.YAIM
 			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
 		}
 
-		private void Mod_PostLoad()
+		/// <summary>
+		/// Iterates through <c><see cref="LoadedColliders"/></c> to add every stored item to the inventory.
+		/// This is a solution to variable hardware and mod setups; maintaining the load catcher until the inventory is manually opened
+		/// gives plenty of time for it to catch any items that it might otherwise miss between loading phases.
+		/// </summary>
+		internal void UnpackCachedColliders()
 		{
 			// Handle loading saved items in post-load instead of regular load, to allow for modded items to initialize beforehand and thus be picked up
 			PrintToConsole("Detecting saved items...", ConsoleMessageScope.SaveLoad);
@@ -197,6 +206,7 @@ namespace Ceres.YAIM
 				}
 				PrintToConsole($"Loaded {loadedItems} saved item(s) to the inventory; {LoadedColliders.Count - loadedItems} collider(s) filtered out.", ConsoleMessageScope.SaveLoad);
 			}
+			LoadedColliders.Clear();
 
 			PrintToConsole("Destroying load catcher...", ConsoleMessageScope.System);
 			GameObject.Destroy(LoadCatcher);
@@ -233,7 +243,11 @@ namespace Ceres.YAIM
 			}
 
 			if (KeybindToggleGUI.GetKeybindDown())
+			{
+				if (LoadedColliders.Count > 0)
+					UnpackCachedColliders();
 				UIHandler.Singleton.Toggle();
+			}
 			if (!UIHandler.Singleton.gameObject.activeSelf)
 				return;
 			if (KeybindDropAll.GetKeybindDown())

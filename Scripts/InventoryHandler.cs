@@ -1,9 +1,9 @@
-﻿using HutongGames.PlayMaker;
+﻿using Ceres.YAIM.UI;
+using HutongGames.PlayMaker;
+using MSCLoader;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Ceres.YAIM.UI;
-using MSCLoader;
 
 namespace Ceres.YAIM
 {
