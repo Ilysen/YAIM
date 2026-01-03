@@ -6,7 +6,7 @@ Most of YAIM is licensed under the [GNU General Public License v3](http://www.gn
 
 ## Attributions
 
-* The [Fugaz One](https://fonts.google.com/specimen/Fugaz+One) font is included under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/open-font-license-official-text/). Its full text can be found in [Assets/OFL.txt].
+* The [Fugaz One](https://fonts.google.com/specimen/Fugaz+One) font is included under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/open-font-license-official-text/). Its full text can be found in [Assets/OFL.txt](Assets/OFL.txt).
 * The audio files used for opening and closing the inventory are graciously sourced from FilmCow's Royalty Free Sound Effects Library on [itch.io](https://filmcow.itch.io/filmcow-sfx). For this project, I've re-exported the relevant sound effects at 22500 Hz and Mono in order to make them extra crunchy to match the rest of My Summer Car's soundscape.
 * This mod is based on code from [Carry More (backpack)](https://github.com/wampa842/mysummermods), by Wampa842 ([GPL v3 license](https://github.com/Wampa842/MySummerMods/blob/master/COPYING.TXT)) and, despite heavy code divergences between the two, can very much be considered a fork of it. The original mod is abandoned; this one is intended to serve as a spiritual successor, and it wouldn't exist without the foundation that they built here. Thank you very much!
 
