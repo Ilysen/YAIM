@@ -1,6 +1,6 @@
 # Yet Another Inventory Mod
 
-Yet Another Inventory Mod, or YAIM (pronounced "yam" for sillies) is a modern backpack mod for My Summer Car. For more info, take a look at the Nexus page (tbd).
+Yet Another Inventory Mod, or YAIM (pronounced "yam" for sillies) is a modern backpack mod for My Summer Car and My Winter Car. For more info, take a look at [the Nexus page](https://www.nexusmods.com/mysummercar/mods/7483).
 
 Most of YAIM is licensed under the [GNU General Public License v3](http://www.gnu.org/licenses/agpl.html), which can be found in full in [LICENSE.md](LICENSE.md). Exceptions and notes can be found in the **Attributions** section down just below.
 

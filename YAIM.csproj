@@ -62,7 +62,7 @@
     <Compile Include="Scripts\LoadCatcher.cs" />
     <Compile Include="Scripts\UI\UIHandler.cs" />
     <Compile Include="Scripts\InventoryHandler.cs" />
-    <Compile Include="YAIM.cs" />
+    <Compile Include="Scripts\YAIM.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

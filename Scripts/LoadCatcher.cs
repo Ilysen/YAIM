@@ -54,6 +54,7 @@ namespace Ceres.YAIM
 			c.bounds.Expand(25f);
 			c.isTrigger = true;
 			loadCatcher.AddComponent<LoadCatcher>();
+			YAIM.PrintToConsole($"Load catcher created at position: {loadCatcher.transform.localPosition}", YAIM.ConsoleMessageScope.SaveLoad);
 			return loadCatcher;
 		}
 	}

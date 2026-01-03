@@ -16,7 +16,7 @@ namespace Ceres.YAIM
 		public override string ID => "YAIM";
 		public override string Name => "Yet Another Inventory Mod";
 		public override string Author => "Ceres et al.";
-		public override string Version => "0.1";
+		public override string Version => "2.0";
 		public override string Description => "Carry stuff around! A spiritual successor to many other backpack mods.";
 
 		internal static YAIM Singleton;
@@ -30,7 +30,7 @@ namespace Ceres.YAIM
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
 
-		public readonly SettingsKeybind KeybindToggleGUI = Keybind.Add("toggleGUI", "Open or close inventory list", KeyCode.X);
+		public readonly SettingsKeybind KeybindToggleGUI = Keybind.Add("toggleGUI", "Open inventory", KeyCode.X);
 		public readonly SettingsKeybind KeybindPickUp = Keybind.Add("pickUp", "Pick up an item", KeyCode.E);
 		public readonly SettingsKeybind KeybindDropSelected = Keybind.Add("dropSelected", "Drop selected item", KeyCode.Y);
 		public readonly SettingsKeybind KeybindDropAll = Keybind.Add("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
@@ -90,25 +90,25 @@ namespace Ceres.YAIM
 		{
 			Color headingColor = new Color(0.1f, 0.1f, 0.1f);
 
-			Settings.AddText(this, "Inventory details are cached during game load and won't change mid-game on their own. This button forces the inventory to re-initialize, which will update any values that have been changed in the settings since the save was loaded.");
+			Settings.AddText(this, "Inventory limits like max weight and length are only set once, during game load. This button forces the inventory to re-initialize, which will update them without needing to save and exit.");
 			Settings.AddButton(this, "Re-initialize inventory", RefreshValues);
 
 			Settings.AddHeader(this, "System", headingColor, Color.white);
 			SettingShowMessages = Settings.AddCheckBox(this, "showMessages", "Show messages when failing to pick something up", true);
-			SettingPlaySounds = Settings.AddCheckBox(this, "playSounds", "Play a sound when opening or closing the GUI", true);
+			SettingPlaySounds = Settings.AddCheckBox(this, "playSounds", "Play a sound when opening or closing the inventory", true);
 
 			Settings.AddHeader(this, "Balance", headingColor, Color.white);
 			Settings.AddText(this, "For true misery, cut the default values by three quarters to simulate jeans pockets.");
 			SettingWeightLimit = Settings.AddTextBox(this, "weightLimitString", "Weight capacity (kg)", "16", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 			SettingLengthLimit = Settings.AddTextBox(this, "lengthLimitString", "Max item length (cm)", "40", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 
-			Settings.AddHeader(this, "Legacy Mode", headingColor, Color.white);
+			Settings.AddHeader(this, "Legacy mode", headingColor, Color.white);
 			SettingLegacyMode = Settings.AddCheckBox(this, "legacyMode", "Enable legacy mode", false);
 			Settings.AddText(this, "Capacity is determined by a flat number of items, rather than weight limit.");
 			SettingMaxSlots = Settings.AddTextBox(this, "maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 
 			Settings.AddHeader(this, "Debug", headingColor, Color.white);
-			Settings.AddText(this, "If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you can and should keep them all off.");
+			Settings.AddText(this, "If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you should keep them all off.");
 			SettingLogSystem = Settings.AddCheckBox(this, "logSystem", "Log system messages", false);
 			SettingLogSaveLoad = Settings.AddCheckBox(this, "logSaveLoad", "Log save/load logic", false);
 			SettingLogPickupAndDrop = Settings.AddCheckBox(this, "logPickups", "Log pickup and drop events", false);
@@ -117,8 +117,6 @@ namespace Ceres.YAIM
 			Settings.AddHeader(this, "Danger zone", Color.red, Color.white);
 			SettingDisableBlacklist = Settings.AddCheckBox(this, "disableBlacklist", "Disable blacklist", false);
 			Settings.AddText(this, "Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you're comfortable risking a broken save.");
-			SettingAggressiveLoading = Settings.AddCheckBox(this, "aggressiveLoading", "Aggressive loading", false);
-			Settings.AddText(this, "If your items are lost when saving and loading, try enabling this option. This will result in worse performance until the inventory is opened for the first time each load.");
 		}
 		#endregion
 
@@ -177,11 +175,7 @@ namespace Ceres.YAIM
 			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
 		}
 
-		private void Mod_PostLoad()
-		{
-			if (!SettingAggressiveLoading.GetValue())
-				UnpackCachedColliders();
-		}
+		private void Mod_PostLoad() => UnpackCachedColliders();
 
 		/// <summary>
 		/// Iterates through <c><see cref="LoadedColliders"/></c> to add every stored item to the inventory.

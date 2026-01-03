@@ -145,7 +145,7 @@ namespace Ceres.YAIM.UI
 			if (YAIM.SettingPlaySounds.GetValue())
 			{
 				AudioClip toPlay = listToUse[UnityEngine.Random.Range(0, listToUse.Count)];
-				Audio.pitch = UnityEngine.Random.Range(90, 111) / 100f;
+				Audio.pitch = UnityEngine.Random.Range(90, 111) / 100f; // random pitch shift between 90% and 110%, for variety
 				Audio.PlayOneShot(toPlay);
 			}
 			Refresh();
@@ -198,6 +198,7 @@ namespace Ceres.YAIM.UI
 		internal static string DisplayName(GameObject Object) => Object.name.
 			Replace("(Clone)", string.Empty).
 			Replace("(itemx)", string.Empty).
+			Replace("(item2)", string.Empty).
 			Replace("(xxxxx)", string.Empty).
 			ToUpper();
 		#endregion

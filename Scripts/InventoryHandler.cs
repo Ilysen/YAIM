@@ -38,6 +38,7 @@ namespace Ceres.YAIM
 		/// </summary>
 		private readonly Dictionary<string, float> LengthOverrides = new Dictionary<string, float>()
 		{
+			// My Summer Car
 			{ "electrics(Clone)", 6f },
 			{ "fuel strainer(Clone)", 6f },
 			{ "brake lining(Clone)", 4f },
@@ -45,7 +46,10 @@ namespace Ceres.YAIM
 			{ "radiator hose1(Clone)", 6f },
 			{ "radiator hose2(Clone)", 6f },
 			{ "radiator hose3(Clone)", 8f },
-			{ "parts magazine(itemx)", 18f } // not something you can usually pick up, of course - this is for compat. with pickable parts catalog
+			{ "parts magazine(itemx)", 18f }, // not something you can usually pick up, of course - this is for compat. with pickable parts catalog
+
+			// My Winter Car
+			{ "part magazine(itemx)", 18f },
 		};
 
 		/// <summary>
