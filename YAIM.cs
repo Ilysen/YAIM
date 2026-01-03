@@ -30,12 +30,12 @@ namespace Ceres.YAIM
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
 
-		private readonly Keybind KeybindToggleGUI = new Keybind("toggleGUI", "Open or close inventory list", KeyCode.X);
-		private readonly Keybind KeybindPickUp = new Keybind("pickUp", "Pick up an item", KeyCode.E);
-		private readonly Keybind KeybindDropSelected = new Keybind("dropSelected", "Drop selected item", KeyCode.Y);
-		private readonly Keybind KeybindDropAll = new Keybind("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
-		private readonly Keybind KeybindScrollUp = new Keybind("scrollUp", "Scroll up", KeyCode.None);
-		private readonly Keybind KeybindScrollDown = new Keybind("scrollDown", "Scroll down", KeyCode.None);
+		public readonly SettingsKeybind KeybindToggleGUI = Keybind.Add("toggleGUI", "Open or close inventory list", KeyCode.X);
+		public readonly SettingsKeybind KeybindPickUp = Keybind.Add("pickUp", "Pick up an item", KeyCode.E);
+		public readonly SettingsKeybind KeybindDropSelected = Keybind.Add("dropSelected", "Drop selected item", KeyCode.Y);
+		public readonly SettingsKeybind KeybindDropAll = Keybind.Add("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
+		public readonly SettingsKeybind KeybindScrollUp = Keybind.Add("scrollUp", "Scroll up", KeyCode.None);
+		public readonly SettingsKeybind KeybindScrollDown = Keybind.Add("scrollDown", "Scroll down", KeyCode.None);
 
 		internal static SettingsCheckBox SettingShowMessages;
 		internal static SettingsCheckBox SettingPlaySounds;
@@ -119,14 +119,6 @@ namespace Ceres.YAIM
 			Settings.AddText(this, "Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you're comfortable risking a broken save.");
 			SettingAggressiveLoading = Settings.AddCheckBox(this, "aggressiveLoading", "Aggressive loading", false);
 			Settings.AddText(this, "If your items are lost when saving and loading, try enabling this option. This will result in worse performance until the inventory is opened for the first time each load.");
-
-			Keybind.Add(this, KeybindPickUp);
-			Keybind.Add(this, KeybindDropAll);
-			Keybind.Add(this, KeybindDropSelected);
-			Keybind.Add(this, KeybindToggleGUI);
-			Keybind.AddHeader(this, "Optional");
-			Keybind.Add(this, KeybindScrollUp);
-			Keybind.Add(this, KeybindScrollDown);
 		}
 		#endregion
 
@@ -158,7 +150,7 @@ namespace Ceres.YAIM
 			PrintToConsole($"{ID} version {Version} is attempting to initialize", ConsoleMessageScope.Core);
 
 			PrintToConsole("Loading assets...", ConsoleMessageScope.System);
-			AssetBundle ab = LoadAssets.LoadBundle("YAIM.Assets.yaim_hud.unity3d");
+			AssetBundle ab = LoadAssets.LoadBundle("YAIM.AssetBundles.yaim_hud.unity3d");
 			GameObject hudObject = ab.LoadAsset<GameObject>("YAIM HUD.prefab");
 			List<AudioClip> closeSounds = new List<AudioClip>();
 			List<AudioClip> openSounds = new List<AudioClip>();
