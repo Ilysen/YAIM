@@ -1,7 +1,4 @@
-﻿using Ceres.YAIM.UI;
-using MSCLoader;
-using System;
-using System.Linq;
+﻿using System.Diagnostics;
 using UnityEngine;
 
 namespace Ceres.YAIM
@@ -17,7 +14,7 @@ namespace Ceres.YAIM
 		/// <summary>
 		/// Keeps track of how long this load catcher has existed for. This is only used for debug.
 		/// </summary>
-		private float TimeElapsed = 0f;
+		public Stopwatch TimeElapsed { get; private set; }
 
 		private void OnTriggerEnter(Collider other) => CacheObj(other.gameObject);
 
@@ -25,9 +22,13 @@ namespace Ceres.YAIM
 
 		private void OnTriggerExit(Collider other) => CacheObj(other.gameObject);
 
-		private void OnDestroy() => YAIM.PrintToConsole($"Load catcher destroyed after {Math.Round(TimeElapsed, 2)} second(s) active.", YAIM.ConsoleMessageScope.SaveLoad);
+		private void OnDestroy()
+		{
+			TimeElapsed.Stop();
+			YAIM.PrintToConsole($"Load catcher destroyed after {TimeElapsed.Elapsed:s\\.ff} second(s) active.", YAIM.ConsoleMessageScope.SaveLoad);
+		}
 
-		private void CacheObj(GameObject Object)
+		internal void CacheObj(GameObject Object)
 		{
 			if (!YAIM.LoadedColliders.Contains(Object))
 			{
@@ -36,8 +37,6 @@ namespace Ceres.YAIM
 			}
 		}
 
-		private void Update() => TimeElapsed += Time.deltaTime;
-
 		/// <summary>
 		/// Creates a <see cref="GameObject"/> at the provided position with a <see cref="LoadCatcher"/> component to grab everything within a 25m radius.
 		/// </summary>
@@ -45,15 +44,18 @@ namespace Ceres.YAIM
 		/// <returns>The newly-created <see cref="GameObject"/>.</returns>
 		internal static GameObject Create(Vector3 Position)
 		{
+			YAIM.PrintToConsole($"Creating load catcher at position: {Position}", YAIM.ConsoleMessageScope.SaveLoad);
 			GameObject loadCatcher = new GameObject
 			{
 				name = "LOAD CATCHER"
 			};
-			loadCatcher.transform.localPosition = InventoryHandler.TempPosition;
+			loadCatcher.transform.localPosition = Position;
 			Collider c = loadCatcher.AddComponent<SphereCollider>();
-			c.bounds.Expand(25f);
+			c.bounds.Expand(250f);
 			c.isTrigger = true;
-			loadCatcher.AddComponent<LoadCatcher>();
+			var lc = loadCatcher.AddComponent<LoadCatcher>();
+			lc.TimeElapsed = new Stopwatch();
+			lc.TimeElapsed.Start();
 			YAIM.PrintToConsole($"Load catcher created at position: {loadCatcher.transform.localPosition}", YAIM.ConsoleMessageScope.SaveLoad);
 			return loadCatcher;
 		}

@@ -12,9 +12,10 @@ Most of YAIM is licensed under the [GNU General Public License v3](http://www.gn
 
 ## Changelog
 
-### TBD
+### 8 January 2026
 #### Version 2.0
 * Adds support for My Winter Car early access using MSCLoader version 1.4.0 and up. The same mod file should freely work between both games!
+* The opening/closing sounds have been resampled at a lower quality to match the game's crunchy audio.
 * Unity assetbundle files are now included under the Assets folder. It includes audio, fonts, metadata, scripts, and Unity scene files required to open it up and build the asset bundle straight from the assets. There are some caveats attached (see Assets/README.md for more info.)
 
 ### 8 February 2025

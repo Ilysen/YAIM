@@ -29,7 +29,8 @@ namespace Ceres.YAIM
 			"JONNEZ ES(Clone)",
 			"doorl",
 			"doorr",
-			"doorear"
+			"doorear",
+			"table marker(xxxxx)"
 		};
 
 		/// <summary>
@@ -48,6 +49,13 @@ namespace Ceres.YAIM
 			{ "radiator hose2(Clone)", 6f },
 			{ "radiator hose3(Clone)", 8f },
 			{ "parts magazine(itemx)", 18f }, // not something you can usually pick up, of course - this is for compat. with pickable parts catalog
+
+			// My Winter Car
+			{ "Clutch Cable(VINXX)", 6f },
+			{ "Heater Hose Inlet(VINXX)", 12f },
+			{ "Heater Hose Outlet(VINXX)", 12f }, // haven't played far enough to find out if this is a thing but- may as well just in case
+			{ "winter jacket(itemx)", 30f }, // you could probably get em in there with enough folding
+			{ "winter coverall(itemx)", 44f }
 		};
 
 		/// <summary>
@@ -298,6 +306,7 @@ namespace Ceres.YAIM
 		/// Also updates mass.
 		/// </summary>
 		/// <param name="Position">An optional position that the item will be dropped at.</param>
+		// TODO: Prevent this from phasing through active colliders
 		internal void DropCurrent(Vector3? Position = null)
 		{
 			if (Position == null)
