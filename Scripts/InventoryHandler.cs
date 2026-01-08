@@ -3,6 +3,7 @@ using HutongGames.PlayMaker;
 using MSCLoader;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Ceres.YAIM
@@ -47,9 +48,6 @@ namespace Ceres.YAIM
 			{ "radiator hose2(Clone)", 6f },
 			{ "radiator hose3(Clone)", 8f },
 			{ "parts magazine(itemx)", 18f }, // not something you can usually pick up, of course - this is for compat. with pickable parts catalog
-
-			// My Winter Car
-			{ "part magazine(itemx)", 18f },
 		};
 
 		/// <summary>
@@ -156,7 +154,14 @@ namespace Ceres.YAIM
 			}
 
 			// 3. Is it bolted to the car?
-			foreach (PlayMakerFSM c in Target.GetComponents<PlayMakerFSM>())
+			var fsms = Target.GetComponents<PlayMakerFSM>();
+			if (ModLoader.CurrentGame == Game.MyWinterCar)
+			{
+				// In MWC, car parts don't track their installation status directly; instead their parent objects do
+				// So, we need to refer to those instead!
+				fsms = fsms.Concat(Target.GetComponentsInParent<PlayMakerFSM>()).ToArray();
+			}
+			foreach (PlayMakerFSM c in fsms)
 			{
 				// Part is installed if component is "Data" or "Use" and "Installed" is true
 				if (c.FsmName == "Data" || c.FsmName == "Use")
@@ -164,7 +169,7 @@ namespace Ceres.YAIM
 					FsmBool v = c.FsmVariables.FindFsmBool("Installed");
 					if (v != null && v.Value)
 					{
-						YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed", YAIM.ConsoleMessageScope.PickupLogic);
+						YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed (FSM parent: {c.gameObject.name})", YAIM.ConsoleMessageScope.PickupLogic);
 						return false;
 					}
 				}
@@ -318,10 +323,12 @@ namespace Ceres.YAIM
 		internal void DropAll(Vector3? Position = null)
 		{
 			YAIM.PrintToConsole($"Attempting to drop all objects at position {(Position != null ? Position.ToString() : "NULL")}", YAIM.ConsoleMessageScope.PickupAndDrop);
-			foreach (var item in Items.ToArray()) // This sucks but it's less of a headache than writing a for() right now. I'm sleepy.
+			// archived code written by past ceres circa feb. 2025, preserved because it's hilarious
+			//foreach (var item in Items.ToArray()) // This sucks but it's less of a headache than writing a for() right now. I'm sleepy.
+			for (int i = 0; i < Items.Count; i++)
 				DropCurrent(Position);
 			if (Items.Count > 0)
-				ModConsole.LogError("[YAIM] The inventory attempted to save but not every item was dropped! Report this to the mod author!");
+				ModConsole.LogError("[YAIM] The inventory attempted to drop everything, but not every item was dropped! Report this to the mod author!");
 			else
 				YAIM.PrintToConsole("Dropped all items.", YAIM.ConsoleMessageScope.PickupAndDrop);
 			UIHandler.Singleton.Refresh();

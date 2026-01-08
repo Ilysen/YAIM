@@ -200,6 +200,7 @@ namespace Ceres.YAIM.UI
 			Replace("(itemx)", string.Empty).
 			Replace("(item2)", string.Empty).
 			Replace("(xxxxx)", string.Empty).
+			Replace("(vinxx)", string.Empty).
 			ToUpper();
 		#endregion
 	}
