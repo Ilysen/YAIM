@@ -163,12 +163,10 @@ namespace Ceres.YAIM
 
 			// 3. Is it bolted to the car?
 			var fsms = Target.GetComponents<PlayMakerFSM>();
+			// In MWC, car parts don't track their installation status directly; instead their parent objects do
+			// So, we need to refer to those instead!
 			if (ModLoader.CurrentGame == Game.MyWinterCar)
-			{
-				// In MWC, car parts don't track their installation status directly; instead their parent objects do
-				// So, we need to refer to those instead!
 				fsms = fsms.Concat(Target.GetComponentsInParent<PlayMakerFSM>()).ToArray();
-			}
 			foreach (PlayMakerFSM c in fsms)
 			{
 				// Part is installed if component is "Data" or "Use" and "Installed" is true
@@ -180,6 +178,11 @@ namespace Ceres.YAIM
 						YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed (FSM parent: {c.gameObject.name})", YAIM.ConsoleMessageScope.PickupLogic);
 						return false;
 					}
+				}
+				if (ModLoader.CurrentGame == Game.MySummerCar && c.FsmName == "Removal" && c.Active)
+				{
+					YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed (FSM parent: {c.gameObject.name})", YAIM.ConsoleMessageScope.PickupLogic);
+					return false;
 				}
 
 				// Part is bolted if component is "BoltCheck" and "Tightness" is greater than 0
