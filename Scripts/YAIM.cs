@@ -30,12 +30,12 @@ namespace Ceres.YAIM
 			SetupFunction(Setup.ModSettings, Mod_Settings);
 		}
 
-		public readonly SettingsKeybind KeybindToggleGUI = Keybind.Add("toggleGUI", "Open inventory", KeyCode.X);
-		public readonly SettingsKeybind KeybindPickUp = Keybind.Add("pickUp", "Pick up an item", KeyCode.E);
-		public readonly SettingsKeybind KeybindDropSelected = Keybind.Add("dropSelected", "Drop selected item", KeyCode.Y);
-		public readonly SettingsKeybind KeybindDropAll = Keybind.Add("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
-		public readonly SettingsKeybind KeybindScrollUp = Keybind.Add("scrollUp", "Scroll up", KeyCode.None);
-		public readonly SettingsKeybind KeybindScrollDown = Keybind.Add("scrollDown", "Scroll down", KeyCode.None);
+		public static SettingsKeybind KeybindToggleGUI;
+		public static SettingsKeybind KeybindPickUp;
+		public static SettingsKeybind KeybindDropSelected;
+		public static SettingsKeybind KeybindDropAll;
+		public static SettingsKeybind KeybindScrollUp;
+		public static SettingsKeybind KeybindScrollDown;
 
 		internal static SettingsCheckBox SettingShowMessages;
 		internal static SettingsCheckBox SettingPlaySounds;
@@ -87,6 +87,13 @@ namespace Ceres.YAIM
 
 		private void Mod_Settings()
 		{
+			KeybindToggleGUI = Keybind.Add("toggleGUI", "Open inventory", KeyCode.X);
+			KeybindPickUp = Keybind.Add("pickUp", "Pick up an item", KeyCode.E);
+			KeybindDropSelected = Keybind.Add("dropSelected", "Drop selected item", KeyCode.Y);
+			KeybindDropAll = Keybind.Add("dropAll", "Drop all items", KeyCode.Y, KeyCode.LeftControl);
+			KeybindScrollUp = Keybind.Add("scrollUp", "Scroll up", KeyCode.None);
+			KeybindScrollDown = Keybind.Add("scrollDown", "Scroll down", KeyCode.None);
+
 			Color headingColor = new Color(0.1f, 0.1f, 0.1f);
 
 			Settings.AddText("Inventory limits like max weight and length are only set once, during game load. This button forces the inventory to re-initialize, which will update them without needing to save and exit.");
@@ -112,7 +119,6 @@ namespace Ceres.YAIM
 			SettingLogSaveLoad = Settings.AddCheckBox("logSaveLoad", "Log save/load logic", false);
 			SettingLogPickupAndDrop = Settings.AddCheckBox("logPickups", "Log pickup and drop events", false);
 			SettingLogPickupLogic = Settings.AddCheckBox("logPickupLogic", "Log pickup logic", false);
-			Settings.AddButton("Verbose logging", VerboseLogging);
 
 			Settings.AddHeader("Danger zone", Color.red, Color.white);
 			SettingDisableBlacklist = Settings.AddCheckBox("disableBlacklist", "Disable blacklist", false);
@@ -289,18 +295,6 @@ namespace Ceres.YAIM
 		/// Wrapper for calls <see cref="InventoryHandler.SetupValues"/>. Wrapping it in a function lets us make it nullable to avoid runtimes.
 		/// </summary>
 		private void RefreshValues() => InventoryHandler.Singleton?.SetupValues();
-
-		/// <summary>
-		/// Enables all logging types.
-		/// </summary>
-		private void VerboseLogging()
-		{
-			bool toggleOn = SettingLogSystem.GetValue() && SettingLogSaveLoad.GetValue() && SettingLogPickupLogic.GetValue() && SettingLogPickupAndDrop.GetValue();
-			SettingLogSystem.SetValue(toggleOn);
-			SettingLogSaveLoad.SetValue(toggleOn);
-			SettingLogPickupLogic.SetValue(toggleOn);
-			SettingLogPickupAndDrop.SetValue(toggleOn);
-		}
 		#endregion
 
 		#region Debug

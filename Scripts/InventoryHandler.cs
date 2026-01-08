@@ -332,9 +332,9 @@ namespace Ceres.YAIM
 		internal void DropAll(Vector3? Position = null)
 		{
 			YAIM.PrintToConsole($"Attempting to drop all objects at position {(Position != null ? Position.ToString() : "NULL")}", YAIM.ConsoleMessageScope.PickupAndDrop);
-			// archived code written by past ceres circa feb. 2025, preserved because it's hilarious
-			//foreach (var item in Items.ToArray()) // This sucks but it's less of a headache than writing a for() right now. I'm sleepy.
-			for (int i = 0; i < Items.Count; i++)
+			// update january 2026: this is still less of a headache than writing a for()
+			// I did change it to a discard instead though
+			foreach (var _ in Items.ToArray()) // This sucks but it's less of a headache than writing a for() right now. I'm sleepy.
 				DropCurrent(Position);
 			if (Items.Count > 0)
 				ModConsole.LogError("[YAIM] The inventory attempted to drop everything, but not every item was dropped! Report this to the mod author!");
