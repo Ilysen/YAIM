@@ -82,6 +82,12 @@ namespace Ceres.YAIM
 		internal byte MaxSlots;
 
 		/// <summary>
+		/// The number of entries per inventory page.
+		/// If the current item count is below this value, the page counter won't display at all.
+		/// </summary>
+		internal byte PageEntries;
+
+		/// <summary>
 		/// The sum total of mass of all stored objects in the inventory.
 		/// This value is cached and is updated whenever something changes.
 		/// </summary>
@@ -115,7 +121,8 @@ namespace Ceres.YAIM
 		internal void SetupValues()
 		{
 			YAIM.PrintToConsole("InventoryHandler is setting up values...", YAIM.ConsoleMessageScope.System);
-			MaxSlots = Math.Min((byte)15, byte.Parse(YAIM.SettingMaxSlots.GetValue()));
+			MaxSlots = (byte)Mathf.Clamp(byte.Parse(YAIM.SettingMaxSlots.GetValue()), 1, 100);
+			PageEntries = (byte)Mathf.Clamp(byte.Parse(YAIM.SettingsPageLimit.GetValue()), 2, 20);
 			SufferingMode = !YAIM.SettingLegacyMode.GetValue();
 			MassCapacity = float.Parse(YAIM.SettingWeightLimit.GetValue());
 			MaxLength = float.Parse(YAIM.SettingLengthLimit.GetValue()) / 100f;

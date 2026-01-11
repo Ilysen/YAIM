@@ -12,6 +12,11 @@ Most of YAIM is licensed under the [GNU General Public License v3](http://www.gn
 
 ## Changelog
 
+### 11 January 2026
+#### Version 2.1
+* Items are now split into pages instead of overflowing infinitely at high amounts. The amount of items shown per page can be configured in the settings.
+* The hotkey to drop all items now must be held for 3 seconds. This prevents it being possible to empty everything out by pressing the key accidentally.
+
 ### 8 January 2026
 #### Version 2.0
 * Adds support for My Winter Car early access using MSCLoader version 1.4.0 and up. The same mod file should freely work between both games!

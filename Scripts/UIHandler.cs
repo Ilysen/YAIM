@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Channels;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,9 +19,14 @@ namespace Ceres.YAIM.UI
 		#region Fields
 		/// <summary>
 		/// The big "INVENTORY" text at the bottom of the list.
-		/// Updates to keep track of stored and max mass in suffering mdoe, or item slots in regular mode.
+		/// Updates to keep track of stored and max mass in regular mode, or item slots in legacy mode.
 		/// </summary>
 		private readonly Text Header;
+
+		/// <summary>
+		/// Text used to display the inventory's current page.
+		/// </summary>
+		private readonly Text Pagecounter;
 
 		/// <summary>
 		/// The parent <see cref="Transform"/> that all item entry <see cref="GameObject"/>s are children to.
@@ -45,6 +51,11 @@ namespace Ceres.YAIM.UI
 		internal int CurIndex = 0;
 
 		/// <summary>
+		/// The current page of this inventory.
+		/// </summary>
+		internal int CurPage = 0;
+
+		/// <summary>
 		/// The <see cref="AudioSource"/> used to play open and close sounds.
 		/// </summary>
 		internal AudioSource Audio;
@@ -64,6 +75,7 @@ namespace Ceres.YAIM.UI
 			YAIM.PrintToConsole("Attempting to create canvas...", YAIM.ConsoleMessageScope.System);
 
 			Header = gameObject.transform.FindChild("Canvas/UI/Header").GetComponent<Text>();
+			Pagecounter = gameObject.transform.FindChild("Canvas/UI/Pagecount").GetComponent<Text>();
 
 			EntriesGroup = gameObject.transform.Find("Canvas/UI/Entries");
 			Entries = new List<GameObject>() { gameObject.transform.FindChild("Canvas/UI/Entries/1").gameObject };
@@ -121,6 +133,7 @@ namespace Ceres.YAIM.UI
 					}
 				}
 			}
+			RecalculatePage();
 			for (byte i = 0; i < Entries.Count; i++)
 			{
 				Text entryAt = Entries[i].GetComponent<Text>();
@@ -132,6 +145,42 @@ namespace Ceres.YAIM.UI
 				UpdateText(entryAt, DisplayName(inventory.Items[i]), i == CurIndex ? Color.white : DefaultTextColor);
 			}
 			YAIM.PrintToConsole("Inventory GUI refreshed", YAIM.ConsoleMessageScope.System);
+		}
+
+		/// <summary>
+		/// Determines what page of the UI we're on 
+		/// </summary>
+		internal void RecalculatePage()
+		{
+			if (Entries.Count <= InventoryHandler.Singleton.PageEntries)
+			{
+				CurPage = 0;
+				Pagecounter.gameObject.SetActive(false);
+				Entries.ForEach(x => x.SetActive(true));
+				return;
+			}
+			CurPage = Mathf.CeilToInt((CurIndex) / InventoryHandler.Singleton.PageEntries);
+			CurPage++; // starting the page index at 1 instead of 0 mreans we don't have to do a bunch of Cursed Math
+			// so if we are on page 3 with 15 entries per page, this will start with a min entry index of 30...
+			int minPageEntry = Math.Max(0, InventoryHandler.Singleton.PageEntries * (CurPage - 1));
+			// ...and end with a max entry index of 45...
+			int maxPageEntry = InventoryHandler.Singleton.PageEntries * CurPage;
+			// ...so for each entry falling in that range, display it, and hide all the others
+			// this effectively subdivides the inventory's UI into distinct pages,
+			// which prevents us from going nuts
+			for (byte i = 0; i < Entries.Count; i++)
+			{
+				GameObject entry = Entries[i];
+				entry.SetActive(i >= minPageEntry && i < maxPageEntry);
+			}
+			int maxPages = Mathf.CeilToInt(Entries.Count / InventoryHandler.Singleton.PageEntries) + 1;
+			Pagecounter.gameObject.SetActive(true);
+			string pageText = $"PAGE {CurPage}/{maxPages}";
+			if (CurPage == 6 && maxPages == 9) // sorry, I have demons in my brain
+				pageText += " (nice)";
+			YAIM.PrintToConsole($"Current page: {CurPage}/{maxPages}", YAIM.ConsoleMessageScope.System);
+			YAIM.PrintToConsole($"Current index: {CurIndex} (page min {minPageEntry}, page max {maxPageEntry})", YAIM.ConsoleMessageScope.System);
+			UpdateText(Pagecounter, pageText, DefaultTextColor);
 		}
 
 		/// <summary>

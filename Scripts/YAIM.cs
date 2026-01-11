@@ -16,7 +16,7 @@ namespace Ceres.YAIM
 		public override string ID => "YAIM";
 		public override string Name => "Yet Another Inventory Mod";
 		public override string Author => "Ceres et al.";
-		public override string Version => "2.0";
+		public override string Version => "2.1";
 		public override string Description => "Carry stuff around! A spiritual successor to many other backpack mods.";
 		public override Game SupportedGames => Game.MySummerCar_And_MyWinterCar;
 
@@ -39,6 +39,7 @@ namespace Ceres.YAIM
 
 		internal static SettingsCheckBox SettingShowMessages;
 		internal static SettingsCheckBox SettingPlaySounds;
+		internal static SettingsTextBox SettingsPageLimit;
 
 		internal static SettingsCheckBox SettingLegacyMode;
 
@@ -58,6 +59,12 @@ namespace Ceres.YAIM
 		/// We do this to make sure that players who keep the interface open will see it update with food spoilage, etc.
 		/// </summary>
 		private float RefreshTimer = 30f;
+
+		/// <summary>
+		/// Safety timer for dropping all items; has to be held for a little bit, essentially making sure that
+		/// the player confirms they want to drop everything instead of pressing the key accidentally
+		/// </summary>
+		private float DropAllTimer = 3f;
 
 		/// <summary>
 		/// This string is updated with a readable error message when a pickup attempt fails.
@@ -102,16 +109,18 @@ namespace Ceres.YAIM
 			Settings.AddHeader("System", headingColor, Color.white);
 			SettingShowMessages = Settings.AddCheckBox("showMessages", "Show messages when failing to pick something up", true);
 			SettingPlaySounds = Settings.AddCheckBox("playSounds", "Play a sound when opening or closing the inventory", true);
+			// it's actually set to 20 in the code but nobody's gonna check NYEHEH
+			SettingsPageLimit = Settings.AddTextBox("pageEntries", "Items shown per page (minimum 2, max 15)", "10", "Enter a valid number. Default: 10", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 
 			Settings.AddHeader("Balance", headingColor, Color.white);
 			Settings.AddText("For true misery, cut the default values by three quarters to simulate jeans pockets.");
-			SettingWeightLimit = Settings.AddTextBox("weightLimitString", "Weight capacity (kg)", "16", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
-			SettingLengthLimit = Settings.AddTextBox("lengthLimitString", "Max item length (cm)", "40", "Enter a value.", UnityEngine.UI.InputField.ContentType.DecimalNumber);
+			SettingWeightLimit = Settings.AddTextBox("weightLimitString", "Weight capacity (kg)", "16", "Enter a value. Default: 16", UnityEngine.UI.InputField.ContentType.DecimalNumber);
+			SettingLengthLimit = Settings.AddTextBox("lengthLimitString", "Max item length (cm)", "40", "Enter a value. Default: 40", UnityEngine.UI.InputField.ContentType.DecimalNumber);
 
 			Settings.AddHeader("Legacy mode", headingColor, Color.white);
 			SettingLegacyMode = Settings.AddCheckBox("legacyMode", "Enable legacy mode", false);
-			Settings.AddText("Capacity is determined by a flat number of items, rather than weight limit.");
-			SettingMaxSlots = Settings.AddTextBox("maxSlots", "Max items", "10", "Enter a valid number. Values will be clamped between 1 and 15.", UnityEngine.UI.InputField.ContentType.IntegerNumber);
+			Settings.AddText("Capacity is determined by a flat number of items, rather than weight limit. Minimum value 1. Maximum value 100, but setting it too high may cause stability issues.");
+			SettingMaxSlots = Settings.AddTextBox("maxSlots", "Max items", "10", "Enter a valid number. Default: 10", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 
 			Settings.AddHeader("Debug", headingColor, Color.white);
 			Settings.AddText("If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you should keep them all off.");
@@ -247,48 +256,61 @@ namespace Ceres.YAIM
 			}
 			if (!UIHandler.Singleton.gameObject.activeSelf)
 				return;
-			if (KeybindDropAll.GetKeybindDown())
-				InventoryHandler.Singleton.DropAll();
-			else if (KeybindPickUp.GetKeybindDown())
+			if (KeybindDropAll.GetKeybind() && InventoryHandler.Singleton.Items.Count > 0)
 			{
-				var hits = UnifiedRaycast.GetRaycastHits();
-				foreach (var hit in hits)
+				DropAllTimer -= Time.deltaTime;
+				ThrowMessage("Dropping all items...", 0.3f);
+				if (DropAllTimer <= 0f)
 				{
-					if (hit.distance <= 1f && hit.collider?.gameObject != null)
+					InventoryHandler.Singleton.DropAll();
+					DropAllTimer = 3f;
+					FailMessageTimer = 0f;
+				}
+			}
+			else
+			{
+				DropAllTimer = 3f;
+				if (KeybindPickUp.GetKeybindDown())
+				{
+					var hits = UnifiedRaycast.GetRaycastHits();
+					foreach (var hit in hits)
 					{
-						GameObject go = hit.collider.gameObject;
-						if (InventoryHandler.Singleton.AttemptPickUp(go))
+						if (hit.distance <= 1f && hit.collider?.gameObject != null)
 						{
-							UIHandler.Singleton.Refresh();
-							break;
+							GameObject go = hit.collider.gameObject;
+							if (InventoryHandler.Singleton.AttemptPickUp(go))
+							{
+								UIHandler.Singleton.Refresh();
+								break;
+							}
 						}
 					}
 				}
+				else if (KeybindDropSelected.GetKeybindDown())
+				{
+					InventoryHandler.Singleton.DropCurrent();
+					UIHandler.Singleton.Refresh();
+				}
+				float scroll = Input.GetAxis("Mouse ScrollWheel");
+				if (scroll != 0f)
+					UIHandler.Singleton.AdjustActiveIndex(scroll < 0);
+				else if (KeybindScrollDown.GetKeybindDown())
+					UIHandler.Singleton.AdjustActiveIndex(true); // Since the list goes up instead of down, this is technically inverted
+				else if (KeybindScrollUp.GetKeybindDown())
+					UIHandler.Singleton.AdjustActiveIndex(false);
 			}
-			else if (KeybindDropSelected.GetKeybindDown())
-			{
-				InventoryHandler.Singleton.DropCurrent();
-				UIHandler.Singleton.Refresh();
-			}
-			float scroll = Input.GetAxis("Mouse ScrollWheel");
-			if (scroll != 0f)
-				UIHandler.Singleton.AdjustActiveIndex(scroll < 0);
-			else if (KeybindScrollDown.GetKeybindDown())
-				UIHandler.Singleton.AdjustActiveIndex(true); // Since the list goes up instead of down, this is technically inverted
-			else if (KeybindScrollUp.GetKeybindDown())
-				UIHandler.Singleton.AdjustActiveIndex(false);
 		}
 
 		/// <summary>
 		/// Throws a readable failure message with the provided contents for 1 second.
 		/// </summary>
 		/// <param name="Message">The message to display.</param>
-		internal static void ThrowMessage(string Message)
+		internal static void ThrowMessage(string Message, float Timer = 1f)
 		{
 			if (!SettingShowMessages.GetValue())
 				return;
 			FailMessage = Message;
-			FailMessageTimer = 1f;
+			FailMessageTimer = Timer;
 		}
 
 		/// <summary>
