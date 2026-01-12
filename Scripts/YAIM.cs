@@ -123,7 +123,7 @@ namespace Ceres.YAIM
 			SettingMaxSlots = Settings.AddTextBox("maxSlots", "Max items", "10", "Enter a valid number. Default: 10", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 
 			Settings.AddHeader("Debug", headingColor, Color.white);
-			Settings.AddText("If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. For regular play, you should keep them all off.");
+			Settings.AddText("If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. Keep them all off for regular play, but please turn them on when submitting a bug report!");
 			SettingLogSystem = Settings.AddCheckBox("logSystem", "Log system messages", false);
 			SettingLogSaveLoad = Settings.AddCheckBox("logSaveLoad", "Log save/load logic", false);
 			SettingLogPickupAndDrop = Settings.AddCheckBox("logPickups", "Log pickup and drop events", false);
@@ -188,6 +188,7 @@ namespace Ceres.YAIM
 
 			stopwatch.Stop();
 			PrintToConsole($"{ID} initialized after {stopwatch.Elapsed.Milliseconds} ms!", ConsoleMessageScope.Core);
+			PrintToConsole($"Enabled logging levels: {SettingLogSystem.GetValue()}, {SettingLogSaveLoad.GetValue()}, {SettingLogPickupLogic.GetValue()}, {SettingLogPickupAndDrop.GetValue()}", ConsoleMessageScope.Core);
 		}
 
 		/// <summary>
@@ -250,7 +251,7 @@ namespace Ceres.YAIM
 
 			if (KeybindToggleGUI.GetKeybindDown())
 			{
-				if (LoadedColliders.Count > 0)
+				if (LoadCatcher != null)
 					UnpackCachedColliders();
 				UIHandler.Singleton.Toggle();
 			}
