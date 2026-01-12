@@ -42,17 +42,15 @@ namespace Ceres.YAIM
 		/// </summary>
 		/// <param name="Position">The position to create the new object.</param>
 		/// <returns>The newly-created <see cref="GameObject"/>.</returns>
-		internal static GameObject Create(Vector3 Position)
+		internal static GameObject Create(Vector3 Position, AssetBundle AssetBundle)
 		{
 			YAIM.PrintToConsole($"Creating load catcher at position: {Position}", YAIM.ConsoleMessageScope.SaveLoad);
-			GameObject loadCatcher = new GameObject
-			{
-				name = "LOAD CATCHER"
-			};
+			GameObject loadCatcher = AssetBundle.LoadAsset<GameObject>("YAIM LOAD CATCHER.prefab");
+			loadCatcher = UnityEngine.GameObject.Instantiate(loadCatcher);
 			loadCatcher.transform.localPosition = Position;
-			Collider c = loadCatcher.AddComponent<SphereCollider>();
-			c.bounds.Expand(250f);
-			c.isTrigger = true;
+			bool render = YAIM.SettingVisibleLoadCatcher.GetValue();
+			foreach (Renderer r in loadCatcher.GetComponentsInChildren<Renderer>())
+				r.enabled = render;
 			var lc = loadCatcher.AddComponent<LoadCatcher>();
 			lc.TimeElapsed = new Stopwatch();
 			lc.TimeElapsed.Start();

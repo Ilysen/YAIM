@@ -16,7 +16,7 @@ namespace Ceres.YAIM
 		public override string ID => "YAIM";
 		public override string Name => "Yet Another Inventory Mod";
 		public override string Author => "Ceres et al.";
-		public override string Version => "2.1";
+		public override string Version => "2.2";
 		public override string Description => "Carry stuff around! A spiritual successor to many other backpack mods.";
 		public override Game SupportedGames => Game.MySummerCar_And_MyWinterCar;
 
@@ -51,6 +51,9 @@ namespace Ceres.YAIM
 		internal static SettingsCheckBox SettingLogSaveLoad;
 		internal static SettingsCheckBox SettingLogPickupAndDrop;
 		internal static SettingsCheckBox SettingLogPickupLogic;
+
+		internal static SettingsCheckBox SettingVisibleLoadCatcher;
+		internal static SettingsCheckBox SettingPersistLoadCatcher;
 
 		internal static SettingsCheckBox SettingDisableBlacklist;
 
@@ -92,6 +95,12 @@ namespace Ceres.YAIM
 		/// </summary>
 		private GameObject LoadCatcher;
 
+		/// <summary>
+		/// Loaded from "yaim_hud.unity3d" as an embedded resource.
+		/// First loaded in Setup.PreLoad, fully unpacked and unloaded in Setup.OnLoad.
+		/// </summary>
+		private AssetBundle AssetBundle;
+
 		private void Mod_Settings()
 		{
 			KeybindToggleGUI = Keybind.Add("toggleGUI", "Open inventory", KeyCode.X);
@@ -122,14 +131,19 @@ namespace Ceres.YAIM
 			Settings.AddText("Capacity is determined by a flat number of items, rather than weight limit. Minimum value 1. Maximum value 100, but setting it too high may cause stability issues.");
 			SettingMaxSlots = Settings.AddTextBox("maxSlots", "Max items", "10", "Enter a valid number. Default: 10", UnityEngine.UI.InputField.ContentType.IntegerNumber);
 
-			Settings.AddHeader("Debug", headingColor, Color.white);
+			Settings.AddHeader("Logging", headingColor, Color.white);
 			Settings.AddText("If you're running into bugs, these settings will put extra info into your log that'll help the author diagnose the issues. Keep them all off for regular play, but please turn them on when submitting a bug report!");
 			SettingLogSystem = Settings.AddCheckBox("logSystem", "Log system messages", false);
 			SettingLogSaveLoad = Settings.AddCheckBox("logSaveLoad", "Log save/load logic", false);
 			SettingLogPickupAndDrop = Settings.AddCheckBox("logPickups", "Log pickup and drop events", false);
 			SettingLogPickupLogic = Settings.AddCheckBox("logPickupLogic", "Log pickup logic", false);
 
-			Settings.AddHeader("Danger zone", Color.red, Color.white);
+			Settings.AddHeader("Debug", headingColor, true);
+			Settings.AddText("These options are all for debugging purposes only! Turning them on WILL cause instability!");
+			SettingVisibleLoadCatcher = Settings.AddCheckBox("visibleLoadCatcher", "Render load catcher", false);
+			SettingPersistLoadCatcher = Settings.AddCheckBox("persistLoadCatcher", "Persist load catcher", false);
+
+			Settings.AddHeader("Danger zone", Color.red, Color.white, true);
 			SettingDisableBlacklist = Settings.AddCheckBox("disableBlacklist", "Disable blacklist", false);
 			Settings.AddText("Certain objects are blacklisted for stability purposes to ensure things don't break, like the Jonnez. If this option is enabled, that blacklist will be ignored. Don't use this unless you're comfortable risking a broken save.");
 		}
@@ -145,11 +159,13 @@ namespace Ceres.YAIM
 			// To load these objects, we create a GameObject here (before physics start) with a script that aggressively checks for objects near itself,
 			// and then in the regular load function, we iterate through that cache and add any valid objects to the inventory.
 			// This is rather messy, but it lets us reliably(?) "load" stored items without requiring any new save data.
-
+			
 			Singleton = this; // There's almost certainly a built-in way to reference the mod instance in MSCLoader, but I don't know of it. teehee!
+			PrintToConsole("Loading asset bundle...", ConsoleMessageScope.System);
+			AssetBundle = LoadAssets.LoadBundle("YAIM.AssetBundles.yaim_hud.unity3d");
 			PrintToConsole("Initializing load catcher...", ConsoleMessageScope.System);
 			LoadedColliders = new HashSet<GameObject>();
-			LoadCatcher = Ceres.YAIM.LoadCatcher.Create(InventoryHandler.TempPosition);
+			LoadCatcher = Ceres.YAIM.LoadCatcher.Create(InventoryHandler.TempPosition, AssetBundle);
 			if (LoadCatcher != null)
 				PrintToConsole("Load catcher has been initialized and will detect any saved items.", ConsoleMessageScope.System);
 			else
@@ -163,18 +179,18 @@ namespace Ceres.YAIM
 			PrintToConsole($"{ID} version {Version} is attempting to initialize", ConsoleMessageScope.Core);
 
 			PrintToConsole("Loading assets...", ConsoleMessageScope.System);
-			AssetBundle ab = LoadAssets.LoadBundle("YAIM.AssetBundles.yaim_hud.unity3d");
-			GameObject hudObject = ab.LoadAsset<GameObject>("YAIM HUD.prefab");
+			GameObject hudObject = AssetBundle.LoadAsset<GameObject>("YAIM HUD.prefab");
 			List<AudioClip> closeSounds = new List<AudioClip>();
 			List<AudioClip> openSounds = new List<AudioClip>();
-			foreach (var asset in ab.LoadAllAssets<AudioClip>())
+			foreach (var asset in AssetBundle.LoadAllAssets<AudioClip>())
 			{
 				if (asset.name.Contains("close"))
 					closeSounds.Add(asset);
 				else
 					openSounds.Add(asset);
 			}
-			ab.Unload(false);
+			PrintToConsole("Unloading asset bundle...", ConsoleMessageScope.System);
+			AssetBundle.Unload(false);
 
 			PrintToConsole("Instantiating canvas object...", ConsoleMessageScope.System);
 			GameObject gameObject = UnityEngine.Object.Instantiate(hudObject);
@@ -215,8 +231,13 @@ namespace Ceres.YAIM
 			}
 			LoadedColliders.Clear();
 
-			PrintToConsole("Destroying load catcher...", ConsoleMessageScope.System);
-			GameObject.Destroy(LoadCatcher);
+			if (!SettingPersistLoadCatcher.GetValue())
+			{
+				PrintToConsole("Destroying load catcher...", ConsoleMessageScope.System);
+				GameObject.Destroy(LoadCatcher);
+			}
+			else
+				ModConsole.LogError("[YAIM] Load catcher is NOT BEING DELETED due to an enabled debugging setting. If you're a regular player, TURN THAT SETTING OFF or it will cause problems!!");
 		}
 		#endregion
 

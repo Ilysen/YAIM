@@ -12,6 +12,14 @@ Most of YAIM is licensed under the [GNU General Public License v3](http://www.gn
 
 ## Changelog
 
+### 12 January 2026
+#### Version 2.2
+* Fixes towards save/load regressions and items being re-added to the inventory after dropping them:
+	* Load catcher refactored into a prefab object instead of being created programmatically. Now containers a big box that (hopefully) catches any falling objects.
+	* Fixed the load catcher not deleting itself when it should.
+	* Added debug settings to cause the load catcher to visibly render and to prevent it from self-deleting when the inventory is first opened.
+* Enabled logging levels are now written to the console after the mod initializes.
+
 ### 11 January 2026
 #### Version 2.1
 * Items are now split into pages instead of overflowing infinitely at high amounts. The amount of items shown per page can be configured in the settings.
