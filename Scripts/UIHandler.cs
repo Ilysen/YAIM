@@ -252,6 +252,7 @@ namespace Ceres.YAIM.UI
 			// MWC exclusive
 			Replace("(VINXX)", string.Empty).
 			Replace("(VINX0)", string.Empty).
+			Replace("(item1)", string.Empty).
 			ToUpper();
 		#endregion
 	}

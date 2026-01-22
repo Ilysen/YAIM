@@ -12,6 +12,11 @@ Most of YAIM is licensed under the [GNU General Public License v3](http://www.gn
 
 ## Changelog
 
+### 22 January, 2026
+#### Version 2.2.1
+* Trims more suffixes from names (item1, etc.)
+* Potentially fixes a bug exclusive to the MWC version where the mod would erroneously classify a part as installed even though it wasn't.
+
 ### 12 January 2026
 #### Version 2.2
 * Fixes towards save/load regressions and items being re-added to the inventory after dropping them:

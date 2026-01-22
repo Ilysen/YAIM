@@ -170,36 +170,59 @@ namespace Ceres.YAIM
 
 			// 3. Is it bolted to the car?
 			var fsms = Target.GetComponents<PlayMakerFSM>();
-			// In MWC, car parts don't track their installation status directly; instead their parent objects do
-			// So, we need to refer to those instead!
+
+			// My Winter Car:
+			// All car parts have a Data playmaker that tracks their tightness and the install point they should go to.
+			// To check if a part is installed, we check if it has an install point, and then if it's that install point's active object.
+			// Any tightness greater than zero stops it from being picked up too.
 			if (ModLoader.CurrentGame == Game.MyWinterCar)
-				fsms = fsms.Concat(Target.GetComponentsInParent<PlayMakerFSM>()).ToArray();
-			foreach (PlayMakerFSM c in fsms)
 			{
-				// Part is installed if component is "Data" or "Use" and "Installed" is true
-				if (c.FsmName == "Data" || c.FsmName == "Use")
+				fsms = fsms.Concat(Target.GetComponentsInParent<PlayMakerFSM>()).ToArray();
+				YAIM.PrintToConsole($"Total FSMs: {fsms.Count()}", YAIM.ConsoleMessageScope.PickupLogic);
+				foreach (PlayMakerFSM c in fsms.Where(x => x.FsmName == "Data"))
 				{
-					FsmBool v = c.FsmVariables.FindFsmBool("Installed");
-					if (v != null && v.Value)
+					FsmFloat v = c.FsmVariables.FindFsmFloat("Tightness");
+					YAIM.PrintToConsole($"Tightness: {v?.Value}", YAIM.ConsoleMessageScope.PickupLogic);
+					if (v?.Value > 0)
+					{
+						YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently bolted", YAIM.ConsoleMessageScope.PickupLogic);
+						return false;
+					}
+					FsmGameObject installPoint = c.FsmVariables.FindFsmGameObject("InstallPoint");
+					YAIM.PrintToConsole($"Install point: {installPoint?.Value?.name}", YAIM.ConsoleMessageScope.PickupLogic);
+					if (installPoint?.Value != null)
+					{
+						FsmVariables dataVars = installPoint.Value.GetPlayMaker("Data").FsmVariables;
+						if (dataVars.GetFsmBool("Installed").Value && dataVars.GetFsmGameObject("ActivePart").Value == Target)
+						{
+							YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed (install point: {installPoint.Name})", YAIM.ConsoleMessageScope.PickupLogic);
+							return false;
+						}
+					}
+				}
+				YAIM.PrintToConsole("Item is not a part", YAIM.ConsoleMessageScope.PickupLogic);
+			}
+			// My Summer Car:
+			// Car parts have a Removal fsm and a BoltCheck fsm.
+			// We check Removal.Active and BoltCheck.Tightness.
+			else if (ModLoader.CurrentGame == Game.MySummerCar)
+			{
+				foreach (PlayMakerFSM c in fsms)
+				{
+					if (c.FsmName == "Removal" && c.Active)
 					{
 						YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed (FSM parent: {c.gameObject.name})", YAIM.ConsoleMessageScope.PickupLogic);
 						return false;
 					}
-				}
-				if (ModLoader.CurrentGame == Game.MySummerCar && c.FsmName == "Removal" && c.Active)
-				{
-					YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently installed (FSM parent: {c.gameObject.name})", YAIM.ConsoleMessageScope.PickupLogic);
-					return false;
-				}
-
-				// Part is bolted if component is "BoltCheck" and "Tightness" is greater than 0
-				if (c.FsmName == "BoltCheck")
-				{
-					FsmFloat v = c.FsmVariables.FindFsmFloat("Tightness");
-					if (v != null && v.Value > 0f)
+					// Part is bolted if component is "BoltCheck" and "Tightness" is greater than 0
+					if (c.FsmName == "BoltCheck")
 					{
-						YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently bolted", YAIM.ConsoleMessageScope.PickupLogic);
-						return false;
+						FsmFloat v = c.FsmVariables.FindFsmFloat("Tightness");
+						if (v != null && v.Value > 0f)
+						{
+							YAIM.PrintToConsole($"Failed to pick up {Target.name}; part is currently bolted", YAIM.ConsoleMessageScope.PickupLogic);
+							return false;
+						}
 					}
 				}
 			}
