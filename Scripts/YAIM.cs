@@ -16,7 +16,7 @@ namespace Ceres.YAIM
 		public override string ID => "YAIM";
 		public override string Name => "Yet Another Inventory Mod";
 		public override string Author => "Ceres et al.";
-		public override string Version => "2.2.1";
+		public override string Version => "2.2.2";
 		public override string Description => "Carry stuff around! A spiritual successor to many other backpack mods.";
 		public override Game SupportedGames => Game.MySummerCar_And_MyWinterCar;
 

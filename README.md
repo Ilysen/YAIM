@@ -12,6 +12,10 @@ Most of YAIM is licensed under the [GNU General Public License v3](http://www.gn
 
 ## Changelog
 
+### 12 August, 2026
+#### Version 2.2.2
+* Attempted fixes towards the UI breaking on ultrawide. I'd like to make more granular UI scaling in the future, but this should hopefully work for now.
+
 ### 22 January, 2026
 #### Version 2.2.1
 * Trims more suffixes from names (item1, etc.)
